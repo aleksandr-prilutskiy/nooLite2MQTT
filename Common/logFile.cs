@@ -4,12 +4,10 @@ using System.IO;
 
 namespace Common
 {
-//===============================================================================================================
-//
-// Объект для работы с файлом журнала с буфером отложеной записи
-// Версия от 15.08.2021
-//
-//===============================================================================================================
+    /// <summary>
+    /// Объект для работы с файлом журнала с буфером отложеной записи
+    /// Версия от 04.04.2022
+    /// </summary>
     public class LogFile
     {
         public long FileMaxSize = 10485760;                       // Максимальный размер файла (в байтах)
@@ -18,56 +16,50 @@ namespace Common
         private string _fileName;                                 // Имя файла журнала с полным путем
         private List<string> _buffer;                             // Буфер отложенной записи
         private bool _busy = false; 
+        
         public bool Available                                     // Проверка что журнал доступен для записи
         {
             get { return _fileName != ""; }
         } // Available
+        
         public string FileName                                    // Полный путь и имя файла журнала
         {
             get { return _fileName; }
         } // FileName
 
-//===============================================================================================================
-// Name...........:	LogFile
-// Description....:	Инициализация объекта с именем файла журнала по умолчанию
-// Syntax.........:	new LogFile()
-//===============================================================================================================
+        /// <summary>
+        /// Инициализация объекта с именем файла журнала по умолчанию
+        /// </summary>
         public LogFile()
         {
             Init("", "");
         } // LogFile()
 
-//===============================================================================================================
-// Name...........:	LogFile
-// Description....:	Инициализация объекта
-// Syntax.........:	new LogFile(filename)
-// Parameters.....:	filename    - имя файла журнала
-//===============================================================================================================
+        /// <summary>
+        /// Инициализация объекта
+        /// </summary>
+        /// <param name="filename"> имя файла журнала </param>
         public LogFile(string filename)
         {
             Init("", filename);
         } // LogFile(string)
 
-//===============================================================================================================
-// Name...........:	LogFile
-// Description....:	Инициализация объекта
-// Syntax.........:	new LogFile(dir, filename)
-// Parameters.....:	dir         - путь каталога файла журнала
-//                  filename    - имя файла журнала
-// Remarks .......:	Если путь каталога начинается с "\", то это считается подкаталогом в текущем каталоге
-//===============================================================================================================
+        /// <summary>
+        /// Инициализация объекта
+        /// Если путь каталога начинается с "\", то это считается подкаталогом в текущем каталоге
+        /// </summary>
+        /// <param name="dir"> путь каталога файла журнала </param>
+        /// <param name="filename"> имя файла журнала </param>
         public LogFile(string dir, string filename)
         {
             Init(dir, filename);
-        } // LogFile(string)
+        } // LogFile(string, string)
 
-//===============================================================================================================
-// Name...........:	Init
-// Description....:	Начальная установка объекта
-// Syntax.........:	Init(dir, filename)
-// Parameters.....:	dir         - путь каталога файла журнала
-//                  filename    - имя файла журнала
-//===============================================================================================================
+        /// <summary>
+        /// Начальная установка объекта
+        /// </summary>
+        /// <param name="dir"> путь каталога файла журнала </param>
+        /// <param name="filename"> имя файла журнала </param>
         private void Init(string dir, string filename)
         {
             _buffer = new List<string>();
@@ -93,20 +85,18 @@ namespace Common
             }
         } // Init(string, string)
 
-//===============================================================================================================
-// Name...........:	Write
-// Description....:	Непосредстенная запись сообщения в журнал (без отложенной записи)
-// Syntax.........:	Write(message)
-// Parameters.....:	message     - текст сообщения
-// Remarks .......:	Если в тексте сообщения первый символ @ - он будет замене на актуальную дату и время
-//===============================================================================================================
+        /// <summary>
+        /// Непосредстенная запись сообщения в журнал (без отложенной записи)
+        /// Если в тексте сообщения первый символ @ - он будет замене на актуальную дату и время
+        /// </summary>
+        /// <param name="message"> текст сообщения </param>
         public void Write(string message)
         {
             if ((_fileName == "") || (message == "")) return;
             FileInfo fileinfo = new FileInfo(_fileName);
             bool append = (fileinfo?.Length < FileMaxSize);
             if (message.Substring(0, 1) == "@")
-                message = DateTime.Now.ToString("HH:mm:ss dd.MM.yyyy: ") + message.Substring(1);
+                message = DateTime.Now.ToString("HH:mm:ss:ffff dd.MM.yyyy: ") + message.Substring(1);
             DateTime timer = DateTime.Now.AddMilliseconds(_tryTimeout);
             while (DateTime.Now < timer)
             {
@@ -122,29 +112,25 @@ namespace Common
             _fileName = "";
         } // void Write(string)
 
-//===============================================================================================================
-// Name...........:	Add
-// Description....:	Добавление сообщения в буфер отложенной записи журнала
-// Syntax.........:	Add(message)
-// Parameters.....:	message     - текст сообщения
-// Remarks .......:	Если в тексте сообщения первый символ @ - он будет замене на актуальную дату и время
-//===============================================================================================================
+        /// <summary>
+        /// Добавление сообщения в буфер отложенной записи журнала
+        /// Если в тексте сообщения первый символ @ - он будет замене на актуальную дату и время
+        /// </summary>
+        /// <param name="message"> текст сообщения </param>
         public void Add(string message)
         {
             if ((_fileName == "") || (message == "")) return;
             if (message.Substring(0, 1) == "@")
-                message = DateTime.Now.ToString("HH:mm:ss dd.MM.yyyy: ") + message.Substring(1);
+                message = DateTime.Now.ToString("HH:mm:ss:ffff dd.MM.yyyy: ") + message.Substring(1);
             while (_busy) ;
             _busy = true;
             _buffer.Add(message);
             _busy = false;
         } // void Add(string)
 
-//===============================================================================================================
-// Name...........:	Save
-// Description....:	Cохранение буфера отложенной записи в файл журнала
-// Syntax.........:	Save()
-//===============================================================================================================
+        /// <summary>
+        /// Cохранение буфера отложенной записи в файл журнала
+        /// </summary>
         public void Save()
         {
             if (_fileName == "") return;
@@ -158,10 +144,12 @@ namespace Common
                 try
                 {
                     StreamWriter file = new StreamWriter(_fileName, append, System.Text.Encoding.Default);
-                    foreach (string record in _buffer)
-                        file.WriteLine(record);
+                    while (_buffer.Count > 0)
+                    {
+                        file.WriteLine(_buffer[0]);
+                        _buffer.RemoveAt(0);
+                    }
                     file.Close();
-                    _buffer.Clear();
                     _busy = false;
                     return;
                 }
@@ -170,5 +158,6 @@ namespace Common
             _fileName = "";
             _busy = false;
         } // void Save()
+
     } // class LogFile
-}
+} // namespace Common

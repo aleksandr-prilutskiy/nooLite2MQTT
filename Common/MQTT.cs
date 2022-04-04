@@ -1,20 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using uPLibrary.Networking.M2Mqtt;
 using uPLibrary.Networking.M2Mqtt.Messages;
 
 namespace Common
 {
-//===============================================================================================================
-//
-// Объект для работы с брокером MQTT
-// Версия от 19.09.2021
-//
-//===============================================================================================================
+    /// <summary>
+    /// Объект для работы с брокером MQTT с использованием буфера принятых сообщений
+    /// Версия от 04.04.2022
+    /// </summary>
     public class MQTT
     {
-        public class Message                         // Структура полученных сообщений
+        /// <summary>
+        /// Структура для хранения полученных сообщений
+        /// </summary>
+        public class Message
         {
             public string Topic;                     // Имя топика
             public string Data;                      // Передавемые данные
@@ -24,66 +26,40 @@ namespace Common
         public int BrokerPort = 1883;                // Порт брокера MQTT
         public string UserName;                      // Имя пользователя для подключения к брокеру MQTT
         public string Password;                      // Пароль пользователя для подключения к брокеру MQTT
-        private static string _clientId;             // Идентификатор клиента, подключаемого к брокеру MQTT
-        private readonly LogFile _fileLog = null;    // Ссылка на объект - журнал работы приложения
+        private const uint Reconnect = 10000;        // Период переподключения к брокеру
+        public uint Timeout = 1000;                  // Таймаут отправки сообщений брокеру MQTT
         private static MqttClient _client;           // Объект для работы с брокером MQTT
-        private List<Message> Messages;              // Буфер принятых сообщений
+        private static string _clientId;             // Идентификатор клиента, подключаемого к брокеру MQTT
+        private Thread _handler = null;              // Поток для поддержания подключения к брокеру MQTT
+        public List<string> Topics;                  // Список топиков, но которые нужна подписка
+        private List<Message> _messages;             // Буфер принятых сообщений
+        private readonly LogFile _fileLog = null;    // Ссылка на объект - журнал работы приложения
         private bool _busy = false;                  // Признак ожидания ответа на отправленное сообщение
-
         public delegate void MessageHandler(string topic, string message);
         public MessageHandler OnMessageSend = Skip;  // Обработчик отправленных сообщений
         public MessageHandler OnMessageRead = Skip;  // Обработчик принятых сообщений
+        public delegate void ConnectHandler();
+        public ConnectHandler OnConnect = Skip;      // Обработчик подключения к брокеру MQTT
+        public ConnectHandler OnDisconnect = Skip;   // Обработчик отключения от брокера MQTT
 
-        public bool Connected                        // Признак успешного подключения к брокеру MQTT
-        {
-            get { return _client?.IsConnected == true; }
-        } // Connected
-        public bool IsMessageReceived                // Проверка наличия сообщений в буфере принятых сообщений
-        {
-            get { return Messages.Count > 0; }
-        } // MessageReceived
-
-//===============================================================================================================
-// Name...........:	MQTT
-// Description....:	Инициализация объекта
-// Syntax.........:	new MQTT()
-//===============================================================================================================
-        public MQTT()
-        {
-            Init();
-        } // MQTT()
-
-//===============================================================================================================
-// Name...........:	MQTT
-// Description....:	Инициализация объекта с привязкой файла журнала
-// Syntax.........:	new MQTT(fileLog)
-// Parameters.....:	fileLog     - ссылка на оъект для работы с файлом журнала
-//===============================================================================================================
-        public MQTT(LogFile fileLog)
+        /// <summary>
+        /// Инициализация объекта
+        /// </summary>
+        /// <param name="fileLog"> ссылка на оъект для работы с файлом журнала </param>
+        public MQTT(LogFile fileLog = null)
         {
             _fileLog = fileLog;
-            Init();
-        } // MQTT(LogFile)
-
-//===============================================================================================================
-// Name...........:	Init
-// Description....:	Начальная установка объекта
-// Syntax.........:	Init()
-//===============================================================================================================
-        private void Init()
-        {
             _client = null;
             _clientId = "nooLite2MQTT: " + Guid.NewGuid().ToString("N");
-            Messages = new List<Message>();
-            //_reconnectTimer = DateTime.Now;
-        } // Init()
+            _messages = new List<Message>();
+            Topics = new List<string>();
+            Topics.Add("#");
+        } // MQTT(LogFile)
 
-//===============================================================================================================
-// Name...........:	ReadConfig
-// Description....:	Чтение настроек доступа к базе данных из файла настроек
-// Syntax.........:	ReadConfig(iniFile)
-// Parameters.....:	iniFile     - объект-файл конфигурации программы
-//===============================================================================================================
+        /// <summary>
+        /// Чтение настроек доступа к базе данных из файла настроек
+        /// </summary>
+        /// <param name="iniFile"> объект-файл конфигурации программы </param>
         public void ReadConfig(IniFile iniFile)
         {
             BrokerAddress = iniFile.ReadString("MQTT", "Host", "");
@@ -92,113 +68,105 @@ namespace Common
             Password = iniFile.ReadPassword("MQTT", "Password", "");
         } // ReadConfig(IniFile)
 
-//===============================================================================================================
-// Name...........:	Connect
-// Description....:	Подключение к брокеру MQTT
-// Syntax.........:	Connect()
-//===============================================================================================================
-        public void Connect()
+        /// <summary>
+        /// Запуск потока для поддержания подключения к брокеру MQTT
+        /// </summary>
+        public void Start(CancellationToken cancelToken)
         {
-            if (BrokerAddress == "") return;
-            if (_client == null)
-            {
-                //if (DateTime.Now.Subtract(_reconnectTimer).TotalMilliseconds >= _reconnectTime) return;
-                //_reconnectTimer = _reconnectTimer.AddMilliseconds(_reconnectTime);
-                try
-                {
-                    _client = new MqttClient(BrokerAddress, BrokerPort, false, null, null, MqttSslProtocols.None);
-                    _client.MqttMsgPublished += MessagePublished;
-                    _client.MqttMsgPublishReceived += MessageReceived;
-                }
-                catch (Exception)
-                {
-                    _client = null;
-                }
-            }
-            if (_client?.IsConnected == true) return;
-            try
-            {
-                _client?.Connect(_clientId, UserName, Password);
-            }
-            catch (Exception)
-            {
-                _client = null;
-            }
-            if (_client != null)
-                _fileLog?.Add("@Установлено подключение к брокеру MQTT: " +
-                    BrokerAddress + ":" + BrokerPort.ToString());
-            else
-                _fileLog?.Add("@Ошибка подключения к брокеру MQTT");
-        } // Connect()
+            _handler = new Thread(() => Handler(this, cancelToken));
+            _handler.Start();
+        } // Start()
 
-//===============================================================================================================
-// Name...........:	Subscribe
-// Description....:	Подписка на топик
-// Syntax.........:	Subscribe(topics)
-// Parameters.....:	topics      - имя топика или список топиков через запятую (',')
-// Remarks .......:	'#' - для подписки на все топики
-//===============================================================================================================
+        /// <summary>
+        /// Обработчик потока для поддержания подключения к брокеру MQTT
+        /// </summary>
+        /// <param name="MQTT"> ссылка на объект для работы с брокером MQTT </param>
+        /// <param name="cancelToken"> токен для завершения потока </param>
+        private static void Handler(MQTT MQTT, CancellationToken cancelToken)
+        {
+            DateTime timer = DateTime.Now;
+            while (!cancelToken.IsCancellationRequested)
+            {
+                if ((DateTime.Now >= timer) && (_client == null))
+                    try
+                    {
+                        _client = new MqttClient(MQTT.BrokerAddress, MQTT.BrokerPort,
+                            false, null, null, MqttSslProtocols.None);
+                        _client.MqttMsgPublished += MQTT.MessagePublished;
+                        _client.MqttMsgPublishReceived += MQTT.MessageReceived;
+                        _client?.Connect(_clientId, MQTT.UserName, MQTT.Password);
+                        MQTT._fileLog?.Add("@Установлено подключение к брокеру MQTT: " +
+                                MQTT.BrokerAddress + ":" + MQTT.BrokerPort.ToString());
+                        foreach (string topic in MQTT.Topics) MQTT.Subscribe(topic);
+                        MQTT.OnConnect();
+                    }
+                    catch (Exception exception)
+                    {
+                        MQTT._fileLog?.Add("@Ошибка MQTT: " + exception.Message);
+                        _client = null;
+                        timer = DateTime.Now.AddMilliseconds(Reconnect);
+                        continue;
+                    }
+                if (!_client.IsConnected)
+                {
+                    MQTT._fileLog?.Add("@Ошибка MQTT: Потеряно соединение с брокером");
+                    MQTT.OnDisconnect();
+                    _client = null;
+                    timer = DateTime.Now.AddMilliseconds(Reconnect);
+                    continue;
+                }
+                Thread.Sleep(500);
+            }
+        } // Handler(MQTT, CancellationToken)
+
+        /// <summary>
+        /// Подписка на топик
+        /// '#' - для подписки на все топики
+        /// </summary>
+        /// <param name="topics"> имя топика или список топиков через запятую (',') </param>
         public void Subscribe(string topics)
         {
             if ((topics != "") && (_client?.IsConnected == true))
                 _client.Subscribe(new[] { topics }, new[] { MqttMsgBase.QOS_LEVEL_AT_MOST_ONCE });
         } // Subscribe(string)
 
-//===============================================================================================================
-// Name...........:	Unsubscribe
-// Description....:	Отмена подписки на топик
-// Syntax.........:	Subscribe(topics)
-// Parameters.....:	topics      - имя топика или список топиков через запятую (',')
-//===============================================================================================================
+        /// <summary>
+        /// Отмена подписки на топик
+        /// </summary>
+        /// <param name="topics"> имя топика или список топиков через запятую (',') </param>
         public void Unsubscribe(string topics)
         {
             if ((topics != "") && (_client?.IsConnected == true))
                 _client.Unsubscribe(new[] { topics });
         } // Unsubscribe(string)
 
-//===============================================================================================================
-// Name...........:	MessageSend
-// Description....:	Публикация сообщения MQTT
-// Syntax.........:	MessageSend(topic, message)
-// Parameters.....:	topic       - имя топика
-//                  message     - строка с текстом сообщения
-//===============================================================================================================
-        public void MessageSend(string topic, string message)
+        /// <summary>
+        /// Публикация сообщения MQTT
+        /// </summary>
+        /// <param name="topic"> имя топика </param>
+        /// <param name="message"> строка с текстом сообщения </param>
+        /// <param name="retain"> флаг Retain </param>
+        public void Publish(string topic, string message, bool retain = false)
         {
-            MessageSend(topic, message, false);
-        } // MessageSend(string, string)
-
-//===============================================================================================================
-// Name...........:	MessageSend
-// Description....:	Публикация сообщения MQTT
-// Syntax.........:	MessageSend(topic, message)
-// Parameters.....:	topic       - имя топика
-//                  message     - строка с текстом сообщения
-//                  retain      - флаг Retain
-//===============================================================================================================
-        public void MessageSend(string topic, string message, bool retain)
-        {
-            if (_client?.IsConnected != true) return;
-            while (_busy) { }
+            if ((_client is null) || (_client?.IsConnected != true)) return;
+            BusyWait();
             _busy = true;
             OnMessageSend(topic, message);
             if (topic == "") return;
             _client?.Publish(topic, Encoding.UTF8.GetBytes(message), MqttMsgBase.QOS_LEVEL_EXACTLY_ONCE, retain);
-        } // MessageSend(string, string)
+        } // Publish(string, string)
 
-//===============================================================================================================
-// Name...........:	MessagePublished
-// Description....:	Обработка подтвержения отправки сообщения брокеру
-//===============================================================================================================
+        /// <summary>
+        /// Обработка подтвержения отправки сообщения брокеру
+        /// </summary>
         private void MessagePublished(object sender, MqttMsgPublishedEventArgs e)
         {
             _busy = false;
         } // MessagePublished(sender, e)
 
-//===============================================================================================================
-// Name...........:	MessageReceive
-// Description....:	Обработка сообщения по подписке от брокера MQTT (по подписке)
-//===============================================================================================================
+        /// <summary>
+        /// Обработка сообщения по подписке от брокера MQTT (по подписке)
+        /// </summary>
         private void MessageReceived(object sender, MqttMsgPublishEventArgs e)
         {
             Message message = new Message()
@@ -206,66 +174,90 @@ namespace Common
                 Topic = e.Topic,
                 Data = Encoding.UTF8.GetString(e.Message)
             };
+            _messages.Add(message);
             OnMessageRead(message.Topic, message.Data);
-            Messages.Add(message);
         } // MessageReceived(sender, e)
 
-//===============================================================================================================
-// Name...........:	GetMessage
-// Description....:	Получение сообщения из буфера принятых сообщений
-// Syntax.........:	GetMessage()
-// Return value(s):	Success:    - текст сообщения из буфера, которое было принято раньше других
-//                  Failure:    - null
-// Remarks .......:	После успешного чтения сообщение удаляется из буфера
-//                  Также удаляются все сообщения этого топика
-//                  Возвращается значение последненго полученого сообщения этого топика
-//===============================================================================================================
+        /// <summary>
+        /// Получение сообщения из буфера принятых сообщений
+        /// После успешного чтения прочитанное сообщение удаляется из буфера
+        /// Также удаляются все сообщения этого топика
+        /// Возвращается только значение последненго полученого сообщения этого топика
+        /// </summary>
+        /// <returns>
+        /// Success: текст сообщения из буфера, которое было принято раньше других
+        /// Failure: null - если сообщений нет
+        /// </returns>
         public Message GetMessage()
         {
-            if (Messages.Count == 0) return null;
+            if (_messages.Count == 0) return null;
             Message message = new Message()
             {
-                Topic = Messages[0].Topic,
-                Data = Messages[0].Data
+                Topic = _messages[0].Topic,
+                Data = _messages[0].Data
             };
-            Messages.RemoveAt(0);
-            for (int i = 0; i < Messages.Count; i++)
-                while ((i < Messages.Count) && (Messages[i].Topic == message.Topic))
+            _messages.RemoveAt(0);
+            for (int i = 0; i < _messages.Count; i++)
+                while ((i < _messages.Count) && (_messages[i].Topic == message.Topic))
                 {
-                    message.Data = Messages[i].Data;
-                    Messages.RemoveAt(i);
+                    message.Data = _messages[i].Data;
+                    _messages.RemoveAt(i);
                 }
             return message;
         } // GetMessage(string)
 
-//===============================================================================================================
-// Name...........:	ClearMessages
-// Description....:	Удаление всех сообщений из буфера принятых сообщений
-// Syntax.........:	ClearMessages()
-//===============================================================================================================
+        /// <summary>
+        /// Удаление всех сообщений из буфера принятых сообщений
+        /// </summary>
         public void ClearMessages()
         {
-            Messages.Clear();
+            _messages.Clear();
         } // ClearMessages()
 
-//===============================================================================================================
-// Name...........:	Skip
-// Description....:	Загрушка функции обработки отправки и получения сообщения
-//===============================================================================================================
+        /// <summary>
+        /// Загрушка функций обработки отправки и получения сообщения, подключения к брокеру
+        /// </summary>
+        /// <param name="topic"> имя топика </param>
+        /// <param name="message"> строка с текстом сообщения </param>
         private static void Skip(string topic, string message) { }
 
-//===============================================================================================================
-// Name...........:	Disconnect
-// Description....:	Отключение от брокера MQTT
-// Syntax.........:	Disconnect()
-//===============================================================================================================
+        /// <summary>
+        /// Загрушка функций обработки отправки и получения сообщения, подключения к брокеру
+        /// </summary>
+        private static void Skip() { }
+
+        /// <summary>
+        /// Ожидание обработки операции
+        /// </summary>
+        private void BusyWait()
+        {
+            DateTime timer = DateTime.Now.AddMilliseconds(Timeout);
+            while (_busy)
+            {
+                if (DateTime.Now > timer)
+                {
+                    _fileLog?.Add("@Ошибка: превешение времени ожидания");
+                    _busy = false;
+                    return;
+                }
+                Thread.Sleep(100);
+            }
+        } // BusyWait()
+
+        /// <summary>
+        /// Отключение от брокера MQTT
+        /// </summary>
         public void Disconnect()
         {
-            if (_client?.IsConnected != true) return;
-            while (_busy) { }
+            if (_client is null) return;
+            BusyWait();
+            if (_handler != null)
+                while (_handler.IsAlive) Thread.Sleep(100);
             _client.Disconnect();
             _client = null;
-            Messages.Clear();
+            _messages.Clear();
+            _fileLog?.Add("@Подключение к брокеру MQTT разорвано");
         } // Disconnect()
+
     } // class MQTT
-}
+} // namespace Common

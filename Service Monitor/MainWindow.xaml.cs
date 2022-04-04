@@ -49,7 +49,7 @@ namespace Service_Monitor
         {
             Title = Assembly.GetEntryAssembly().GetCustomAttribute<AssemblyDescriptionAttribute>().Description;
             MQTT.ReadConfig(IniFile);
-            MQTT.Connect();
+            //MQTT.Start();
             MQTT.Subscribe("#");
             LogFileName = IniFile.ReadString("Log", "File", "");
             dispatcherTimer = new System.Windows.Threading.DispatcherTimer();
@@ -102,7 +102,7 @@ namespace Service_Monitor
         private void MQTTMessageSend(object sender, RoutedEventArgs e)
         {
             if ((sendMQTTTopic.Text == "") || (sendMQTTText.Text == "")) return;
-            MQTT.MessageSend(sendMQTTTopic.Text, sendMQTTText.Text);
+            //MQTT.MessageSend(sendMQTTTopic.Text, sendMQTTText.Text);
         } // MQTTMessageResiveSend(object, RoutedEventArgs)
 
 //===============================================================================================================

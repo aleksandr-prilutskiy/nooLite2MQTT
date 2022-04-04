@@ -5,15 +5,17 @@ VisualStudioVersion = 16.0.30011.22
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common", "Common\Common.csproj", "{059912A3-328C-409B-99C3-859C0FADE11B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tray Monitor", "Tray Monitor\Tray Monitor.csproj", "{B2784416-9B55-4955-8AFC-CCF70F11309E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Управление из трея", "Tray Monitor\Управление из трея.csproj", "{B2784416-9B55-4955-8AFC-CCF70F11309E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Service", "Service\Service.csproj", "{FAFE6825-D1C6-45B8-9219-BE876B4E5BC3}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Сервис", "Service\Сервис.csproj", "{FAFE6825-D1C6-45B8-9219-BE876B4E5BC3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Control", "Control\Control.csproj", "{C6D8E442-EB61-4366-87C5-4FA3B02869A4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Приложение управления", "Control\Приложение управления.csproj", "{C6D8E442-EB61-4366-87C5-4FA3B02869A4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Console", "Console\Console.csproj", "{D35D4062-1BE9-4E65-945D-66FE015C9ACE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Консольное приложение", "Console\Консольное приложение.csproj", "{D35D4062-1BE9-4E65-945D-66FE015C9ACE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Service Monitor", "Service Monitor\Service Monitor.csproj", "{0B8D49A4-C0A1-4887-B362-C7DC9FFF352A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Service Monitor (del)", "Service Monitor\Service Monitor (del).csproj", "{0B8D49A4-C0A1-4887-B362-C7DC9FFF352A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Server", "Server\Server.csproj", "{D13F4B87-9942-457E-AF53-F14FB78D27AA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -45,6 +47,10 @@ Global
 		{0B8D49A4-C0A1-4887-B362-C7DC9FFF352A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0B8D49A4-C0A1-4887-B362-C7DC9FFF352A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0B8D49A4-C0A1-4887-B362-C7DC9FFF352A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D13F4B87-9942-457E-AF53-F14FB78D27AA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D13F4B87-9942-457E-AF53-F14FB78D27AA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D13F4B87-9942-457E-AF53-F14FB78D27AA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D13F4B87-9942-457E-AF53-F14FB78D27AA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

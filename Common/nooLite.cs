@@ -1,16 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO.Ports;
-using System.Timers;
+//using System.Timers;
+
+using System.Text;
+using System.Threading;
 
 namespace Common
 {
-//===============================================================================================================
-//
-// Объект для работы с адаптером nooLite MTRF-64-USB
-// Версия от 15.09.2021
-//
-//===============================================================================================================
+    /// <summary>
+    /// Объект для работы с адаптером nooLite MTRF-64-USB
+    /// Версия от 04.04.2022
+    /// </summary>
     public class nooLite
     {
         public enum WorkMode : byte // Режим работы адаптера MTRF-64-USB
@@ -21,7 +22,7 @@ namespace Common
             RxF     = 3, // Режим nooLite-F RX
             Srv     = 4, // Сервисный режим работы с nooLite-F
             Update  = 5  // Режим обновления ПО
-        } // enum Mode
+        } // enum WorkMode
 
         public enum Data : byte // Описание структуры отправляемых / получаемых данных адаптера MTRF-64-USB
         {
@@ -43,7 +44,7 @@ namespace Common
             Id3  = 14,   // Идентификатор блока, бит 7…0
             Crc  = 15,   // Контрольная сумма(младший байт суммы первых 15 байт)
             Sp   = 16,   // Стоповый байт(значение всегда tx = 172 / rx = 174)
-        } // enum
+        } // enum Data
 
         public enum Command : byte // Список команд:
         {
@@ -77,60 +78,40 @@ namespace Common
             ClearMemory     = 132,  // Очистка памяти устройства nooLite
         } // enum Command
 
-        private const int _packetSize = 17;          // Размер пакета записи / чтения адаптера MTRF-64-USB
-        public const byte _сhannelCount = 64;        // Всего количество каналов адаптера MTRF-64-USB
-        private const uint _timeout = 1000;          // Время ожидания ответа адаптера MTRF-64-USB
-        private const byte _modeMtrf64 = (byte)WorkMode.TxF; // Режим работы адаптера MTRF-64-USB
-        public string NativePort = "";               // Указать порт адаптер MTRF-64-USB (если пусто - искать)
-
-        private readonly LogFile _fileLog = null;    // Ссылка на объект - журнал работы приложения
         private static SerialPort _serial;           // Порт для обмена данными с адаптером MTRF-64-USB
+        public string NativePort = "";               // Принудительно указаный порт адаптер MTRF-64-USB
         private string _portMTRF64 = "";             // Название COM-порта, к которому подключен адаптер MTRF-64-USB
+        private const uint _timeout = 1000;          // Время ожидания ответа адаптера MTRF-64-USB
+        private const uint _reconnect = 30000;        // Период переподключения к адаптеру MTRF-64-USB
+        private const byte _modeMtrf64 = (byte)WorkMode.TxF; // Режим работы адаптера MTRF-64-USB
+        public const byte _сhannelCount = 64;        // Всего количество каналов адаптера MTRF-64-USB
+        private const int _packetSize = 17;          // Размер пакета записи / чтения адаптера MTRF-64-USB
+        private Thread _handler = null;              // Поток для поддержания подключения к брокеру MQTT
         private byte[] _buffer;                      // Буфер чтения данных (накопление до полного пакета)
         private byte _bufferPos = 0;                 // Количество данных, загруженных в буфер чтения
         private static List<byte[]> _queuePackages;  // Очередь полученных пакетов, ждущих обработки
-        private Timer ConnectionTimer;               // Таймер проверки соединения с адаптером и переподключения
-        public static bool _busy_send = false;       // Признак того, что адаптер занят (обрабатывает на команду)
-        public static bool _busy_read = false;       // Признак того, что буфер полученных пакетов занят
-
+        private readonly LogFile _fileLog = null;    // Ссылка на объект - журнал работы приложения
+        private bool _busy_send = false;             // Признак того, что адаптер занят (обрабатывает на команду)
+        private bool _busy_read = false;             // Признак того, что буфер полученных пакетов занят
         public delegate void PackageHandler(byte[] buffer);
         public PackageHandler OnPackageSend = Skip;  // Обработчик отправленных сообщений
         public PackageHandler OnPackageRead = Skip;  // Обработчик принятых сообщений
 
+        //private static Timer _timer;               // Таймер проверки подключения к адаптеру MTRF-64-USB
+        //private bool _busy_timer = false;          // Признак обработки события по таймеру
+
         public bool Connected                        // Признак успешного подключения к адаптеру MTRF-64-USB
         {
-            get { return _serial.IsOpen;  } 
+            get { return ((_portMTRF64 != "") && _serial.IsOpen);  } 
         } // Connected
 
-//===============================================================================================================
-// Name...........:	nooLite
-// Description....:	Инициализация объекта
-// Syntax.........:	new nooLite()
-//===============================================================================================================
-        public nooLite()
-        {
-            Init();
-        } // nooLite()
-
-//===============================================================================================================
-// Name...........:	nooLite
-// Description....:	Инициализация объекта с привязкой файла журнала
-// Syntax.........:	new nooLite(fileLog)
-// Parameters.....:	fileLog     - Ссылка на оъект для работы с файлом журнала
-//===============================================================================================================
-        public nooLite(LogFile fileLog)
+        /// <summary>
+        /// Инициализация объекта
+        /// </summary>
+        /// <param name="fileLog"> ссылка на оъект для работы с файлом журнала </param>
+        public nooLite(LogFile fileLog = null)
         {
             _fileLog = fileLog;
-            Init();
-        } // nooLite(LogFile)
-
-//===============================================================================================================
-// Name...........:	Init
-// Description....:	Начальная установка объекта
-// Syntax.........:	Init()
-//===============================================================================================================
-        private void Init()
-        {
             _queuePackages = new List<byte[]>();
             _buffer = new byte[_packetSize];
             _serial = new SerialPort()
@@ -144,49 +125,49 @@ namespace Common
                 WriteTimeout = 100
             };
             _serial.DataReceived += ReceiveDataHandler;
-            ConnectionTimer = new Timer
+        } // nooLite(LogFile)
+
+        /// <summary>
+        /// Запуск потока для поддержания подключения к адаптеру MTRF-64-USB
+        /// </summary>
+        public void Start(CancellationToken cancelToken)
+        {
+            _handler = new Thread(() => Handler(this, cancelToken));
+            _handler.Start();
+        } // Start()
+
+        /// <summary>
+        /// Основной обработчик событий объекта
+        /// </summary>
+        /// <param name="MQTT"> ссылка на объект для работы с брокером MQTT </param>
+        /// <param name="cancelToken"> токен для завершения потока </param>
+        private static void Handler(nooLite nooLite, CancellationToken cancelToken)
+        {
+            DateTime timer = DateTime.Now;
+            while (!cancelToken.IsCancellationRequested)
             {
-                Interval = 10000,
-                AutoReset = true
-            };
-            ConnectionTimer.Elapsed += Reconnect;
-        } // Init()
+                if ((DateTime.Now >= timer) && (!nooLite.Connected))
+                {
+                    if (!nooLite.FindPortMTRF())
+                        nooLite._fileLog?.Add("@Ошибка: Модуль nooLite MTRF-64-USB не обнаружен");
+                    else if (nooLite.Connected)
+                        nooLite._fileLog?.Add("@Модуль nooLite MTRF-64-USB подключен к " + nooLite._portMTRF64);
+                    else
+                        nooLite._fileLog?.Add("@Ошибка: Модуль nooLite MTRF-64-USB не подключен");
+                    timer = DateTime.Now.AddMilliseconds(_reconnect);
+                }
+                Thread.Sleep(500);
+            }
+        } // Handler(nooLite, CancellationToken)
 
-//===============================================================================================================
-// Name...........:	Reconnect
-// Description....:	Проверка текущего подключения и переподключение к модулю nooLite MTRF-64 USB
-// Syntax.........:	Reconnect()
-//===============================================================================================================
-        private void Reconnect(object source, ElapsedEventArgs e)
-        {
-            if (!_serial.IsOpen) Connect();
-        } // Reconnect(object, ElapsedEventArgs)
-
-//===============================================================================================================
-// Name...........:	Connect
-// Description....:	Подключение к модулю nooLite MTRF-64 USB
-// Syntax.........:	Connect()
-//===============================================================================================================
-        public void Connect()
-        {
-            ConnectionTimer.Enabled = false;
-            if (!FindPortMTRF())
-                _fileLog?.Write("@Ошибка: Модуль nooLite MTRF-64-USB не обнаружен");
-            else if (_serial.IsOpen)
-                _fileLog?.Write("@Модуль nooLite MTRF-64-USB подключен к " + _portMTRF64);
-            else
-                _fileLog?.Write("@Ошибка: Модуль nooLite MTRF-64-USB не подключен");
-            ConnectionTimer.Enabled = true;
-        } // Connect()
-
-//===============================================================================================================
-// Name...........:	FindPortMTRF
-// Description....:	Поиск порта, к которому подключен адаптер nooLite MTRF-64 USB
-// Syntax.........:	FindPortMTRF()
-// Return value(s):	Success:    - true, в PortMTRF64 - номер COM-порта в виде строки, например: "COM1"
-//                  Failure:    - false, в PortMTRF64 - пустая строка
-// Remarks .......:	Если адаптер найден, com-порт остается открытым
-//===============================================================================================================
+        /// <summary>
+        /// Поиск порта, к которому подключен адаптер nooLite MTRF-64 USB
+        /// Если адаптер найден, com-порт остается открытым
+        /// </summary>
+        /// <returns>
+        /// Success: true, в PortMTRF64 - номер COM-порта в виде строки, например: "COM1"
+        /// Failure: false, в PortMTRF64 - пустая строка
+        /// </returns>
         private bool FindPortMTRF()
         {
             _portMTRF64 = "";
@@ -201,7 +182,7 @@ namespace Common
                     _serial.Open();
                     if (!_serial.IsOpen) continue;
                     if (SendPackage(CreatePackage((byte)WorkMode.Srv)) &&
-                        (SendCommand(0, (byte)Command.ReadState) != null))
+                        (SendCommand(0, Command.ReadState) != null))
                     {
                         _portMTRF64 = portname;
                         _serial.DiscardInBuffer();
@@ -211,71 +192,42 @@ namespace Common
                 }
                 catch (Exception)
                 {
-                    if (_serial.IsOpen) _serial.Close();
+                    if (Connected) _serial.Close();
                 }
             }
             return false;
         } // bool FindPortMTRF()
 
-//===============================================================================================================
-// Name...........:	SendCommand
-// Description....:	Отправка команды на устройство
-// Syntax.........:	SendCommand(channel, command)
-// Parameters.....:	channel     - Номер канала
-//                  command     - Код команды
-// Return value(s):	Success:    - Список пакетов данных, принятых от адаптера MTRF-64 USB в ответ на команду
-//                  Failure:    - null
-//===============================================================================================================
-        public List<byte[]> SendCommand(byte channel, byte command)
-        {
-            return SendCommand(channel, command, 0x00, 0x00000000);
-        } // SendCommand(byte, byte)
-
-//===============================================================================================================
-// Name...........:	SendCommand
-// Description....:	Отправка команды на устройство
-// Syntax.........:	SendCommand(channel, command, data)
-// Parameters.....:	channel     - Номер канала
-//                  command     - Код команды
-//                  data        - 32 битное целое, которым будет заполнены поля D0, D1, D2 и D3
-// Return value(s):	Success:    - Список пакетов данных, принятых от адаптера MTRF-64 USB в ответ на команду
-//                  Failure:    - null
-//===============================================================================================================
-        public List<byte[]> SendCommand(byte channel, byte command, uint data)
-        {
-            return SendCommand(channel, command, 0x00, data);
-        } // SendCommand(byte, byte, uint)
-
-//===============================================================================================================
-// Name...........:	SendCommand
-// Description....:	Отправка команды на устройство
-// Syntax.........:	SendCommand(channel, command, data)
-// Parameters.....:	channel     - Номер канала
-//                  command     - Код команды
-//                  format      - Содержмое поля FMT
-//                  data        - 32 битное целое, которым будет заполнены поля D0, D1, D2 и D3
-// Return value(s):	Success:    - Список пакетов данных, принятых от адаптера MTRF-64 USB в ответ на команду
-//                  Failure:    - null
-//===============================================================================================================
-        public List<byte[]> SendCommand(byte channel, byte command, byte format, uint data)
+        /// <summary>
+        /// Отправка команды на устройство
+        /// </summary>
+        /// <param name="channel"> номер канала </param>
+        /// <param name="command"> код команды </param>
+        /// <param name="data"> 32 битное целое, которым будет заполнены поля D0, D1, D2 и D3 </param>
+        /// <param name="format"> содержмое поля FMT </param>
+        /// <returns>
+        /// Success: Список пакетов данных, принятых от адаптера MTRF-64 USB в ответ на команду
+        /// Failure: null
+        /// </returns>
+        public List<byte[]> SendCommand(byte channel, Command command, byte format = 0x00, uint data = 0x00000000)
         {
             if ((channel < 0) || (channel >= _сhannelCount)) return null;
             return(SendCommand(CreatePackage(_modeMtrf64, channel, command, format, data)));
-        } // SendCommand(byte, byte, byte, uint)
+        } // SendCommand(byte, Command, byte, uint)
 
-//===============================================================================================================
-// Name...........:	SendCommand
-// Description....:	Отправка команды на устройство
-// Syntax.........:	SendCommand(package, answer)
-// Parameters.....:	package     - Пакет отпраки данных адаптера MTRF-64 USB
-//                  answer      - если true - ждать ответа на команду
-// Return value(s):	Success:    - Список пакетов данных, принятых от адаптера MTRF-64 USB в ответ на команду
-//                  Failure:    - null
-//===============================================================================================================
+        /// <summary>
+        /// Отправка пакета байт на устройство
+        /// </summary>
+        /// <param name="package"> пакет отпраки данных адаптера MTRF-64 USB </param>
+        /// <param name="answer"> если true - ждать ответа на команду </param>
+        /// <returns>
+        /// Success: Список пакетов данных, принятых от адаптера MTRF-64 USB в ответ на команду
+        /// Failure: null
+        /// </returns>
         public List<byte[]> SendCommand(byte[] package, bool answer = true)
         {
             if (!_serial.IsOpen) return null;
-            while (_busy_send) { }
+            while (_busy_send) Thread.Sleep(100);
             _busy_send = true;
             byte channel = package[(byte)Data.Ch];
             SendPackage(package);
@@ -294,7 +246,7 @@ namespace Common
                     _busy_send = false;
                     return null;
                 }
-                while (_busy_read) ;
+                while (_busy_read) Thread.Sleep(100);
                 _busy_read = true;
                 for (int i = 0; i < _queuePackages.Count; i++)
                 {
@@ -316,10 +268,9 @@ namespace Common
             return response;
         } // SendCommand(byte[], bool)
 
-//===============================================================================================================
-// Name...........:	ReceiveDataHandler
-// Description....:	Обработчик событий при получении данных через com-порт
-//===============================================================================================================
+        /// <summary>
+        /// Обработчик событий при получении данных через com-порт
+        /// </summary>
         private void ReceiveDataHandler(object sender, SerialDataReceivedEventArgs e)
         {
             SerialPort port = (SerialPort)sender;
@@ -336,7 +287,7 @@ namespace Common
                     {
                         byte[] buffer = new byte[_packetSize];
                         for (int i = 0; i < _packetSize; i++) buffer[i] = _buffer[i];
-                        while (_busy_read) ;
+                        while (_busy_read) Thread.Sleep(100);
                         _busy_read = true;
                         _queuePackages.Add(buffer);
                         _busy_read = false;
@@ -347,18 +298,18 @@ namespace Common
             }
         } // ReceiveDataHandler(object, SerialDataReceivedEventArgs)
 
-//===============================================================================================================
-// Name...........:	GetMessage
-// Description....:	Получение сообщения из буфера принятых сообщений
-// Syntax.........:	GetMessage()
-// Return value(s):	Success:    - пакет данных из очереди, принятый от адаптера MTRF-64 USB раньше других
-//                  Failure:    - null
-// Remarks .......:	После успешного чтения сообщение удаляется из буфера
-//===============================================================================================================
+        /// <summary>
+        /// Получение сообщения из буфера принятых сообщений
+        /// После успешного чтения сообщение удаляется из буфера
+        /// </summary>
+        /// <returns>
+        /// Success: пакет данных из очереди, принятый от адаптера MTRF-64 USB раньше других
+        /// Failure: null
+        /// </returns>
         public byte[] GetMessage()
         {
             if (_queuePackages.Count == 0) return null;
-            while (_busy_read) ;
+            while (_busy_read) Thread.Sleep(100);
             _busy_read = true;
             byte[] buffer = new byte[_packetSize];
             for (int i = 0; i < _packetSize; i++)
@@ -368,18 +319,16 @@ namespace Common
             return buffer;
         } // GetMessage()
 
-//===============================================================================================================
-// Name...........:	CreatePackage
-// Description....:	Создание пакета отпраки / получения данных адаптера MTRF-64 USB
-// Syntax.........:	CreatePackage(mode, channel, command, format, data)
-// Parameters.....:	mode        - режим работы адаптера
-//                  channel     - номер канала
-//                  command     - код команды
-//                  format      - содержимаое поля FMT
-//                  data        - 32 битное целое, которым будет заполнены поля D0, D1, D2 и D3
-// Return value(s):	Предварительно заполненный массив из _packetSize байт
-//===============================================================================================================
-        public byte[] CreatePackage(byte mode, byte channel = 0x00, byte command = 0x00,
+        /// <summary>
+        /// Создание пакета отпраки / получения данных адаптера MTRF-64 USB
+        /// </summary>
+        /// <param name="mode"> режим работы адаптера </param>
+        /// <param name="channel"> номер канала </param>
+        /// <param name="command"> код команды </param>
+        /// <param name="format"> содержимаое поля FMT </param>
+        /// <param name="data"> 32 битное целое, которым будет заполнены поля D0, D1, D2 и D3 </param>
+        /// <returns> предварительно заполненный массив из _packetSize байт </returns>
+        public byte[] CreatePackage(byte mode, byte channel = 0x00, Command command = 0x00,
             byte format =0x00, uint data = 0x00000000)
         {
             byte[] buffer = new byte[_packetSize];
@@ -389,7 +338,7 @@ namespace Common
             if (mode != (byte)WorkMode.Srv)
             {
                 buffer[(byte)Data.Ch] = channel;
-                buffer[(byte)Data.Cmd] = command;
+                buffer[(byte)Data.Cmd] = (byte)command;
                 buffer[(byte)Data.Fmt] = format;
                 buffer[(byte)Data.D0] = (byte)(data >> 24);
                 buffer[(byte)Data.D1] = (byte)(data >> 16);
@@ -401,16 +350,16 @@ namespace Common
             }
             buffer[(byte)Data.Sp] = 172;
             return buffer;
-        } // CreatePackage(bool, byte, byte, byte, byte, uint)
+        } // CreatePackage(byte, byte, Command, byte, uint)
 
-//===============================================================================================================
-// Name...........:	SendPackage
-// Description....:	Отправка пакета данных адаптеру MTRF-64 USB
-// Syntax.........:	SendPackage(buffer)
-// Parameters.....:	buffer      - пакет данных, подготовленный к отправке адаптеру MTRF-64 USB
-// Return value(s):	Success:    - true (данные успешно отправдены)
-//                  Failure:    - flase (во время отправки данных возникла ошибка)
-//===============================================================================================================
+        /// <summary>
+        /// Отправка пакета данных адаптеру MTRF-64 USB
+        /// </summary>
+        /// <param name="buffer"> пакет данных, подготовленный к отправке адаптеру MTRF-64 USB </param>
+        /// <returns>
+        ///	Success: true - данные успешно отправлены
+        /// Failure: flase - во время отправки данных возникла ошибка
+        /// </returns>
         private bool SendPackage(byte[] buffer)
         {
             try
@@ -425,23 +374,24 @@ namespace Common
             return true;
         } // SendPackage(byte[])
 
-//===============================================================================================================
-// Name...........:	Skip
-// Description....:	Загрушка функции обработки отправки и получения данных
-//===============================================================================================================
+        /// <summary>
+        /// Загрушка функции обработки отправки и получения данных
+        /// </summary>
         private static void Skip(byte[] buffer) {}
 
-//===============================================================================================================
-// Name...........:	Close
-// Description....:	Закрытие com-порта
-// Syntax.........:	Close()
-//===============================================================================================================
-        public void Close()
+        /// <summary>
+        /// Отключение от адаптера MTRF-64 USB и закрытие com-порта
+        /// </summary>
+        public void Disconnect()
         {
-            if (!_serial.IsOpen) return;
+            if (!Connected) return;
+            if (_handler != null)
+                while (_handler.IsAlive) Thread.Sleep(100);
+            while ((_busy_read) || (_busy_send)) Thread.Sleep(100);
             _serial.Close();
             _portMTRF64 = "";
             _queuePackages.Clear();
-        } // void Close
+        } // void Disconnect
+
     } // class nooLite
-}
+} // namespace Common

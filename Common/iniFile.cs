@@ -5,12 +5,10 @@ using System.Text;
 
 namespace Common
 {
-//===============================================================================================================
-//
-// Объект для работы с файлом конфигурации программы
-// Версия от 03.09.2021
-//
-//===============================================================================================================
+    /// <summary>
+    /// Объект для работы с файлом конфигурации программы
+    /// Версия от 23.02.2022
+    /// </summary>
     public class IniFile
     {
         private const string _defaultFileName = "Config.ini";   // Имя файла конфигурации по умолчанию
@@ -18,47 +16,39 @@ namespace Common
         private string _encryptionKey = "g360Vdoug0Dl8d71";     // Ключ шифрования паролей
         private string _encryptionIV = "jHP0o90czCkRpM3Z";      // Вектор инициализации шифрования паролей
 
-//===============================================================================================================
-// Name...........:	IniFile
-// Description....:	Инициализация объекта
-// Syntax.........:	new IniFile()
-//===============================================================================================================
+        /// <summary>
+        /// Инициализация объекта с именем файла по умолчанию
+        /// </summary>
         public IniFile()
         {
             Init("", "");
         } // IniFile()
 
-//===============================================================================================================
-// Name...........:	IniFile
-// Description....:	Инициализация объекта с привязкой файла журнала
-// Syntax.........:	new IniFile(filename)
-// Parameters.....:	filename    - имя ini-файла журнала
-//===============================================================================================================
+        /// <summary>
+        /// Инициализация объекта с указанием имени файла
+        /// </summary>
+        /// <param name="filename"> имя файла конфигурации </param>
         public IniFile(string filename)
         {
             Init("", filename);
         } // IniFile(string)
 
-//===============================================================================================================
-// Name...........:	IniFile
-// Description....:	Инициализация объекта с привязкой файла журнала
-// Syntax.........:	new IniFile(dir, filename)
-// Parameters.....:	dir         - путь каталога файла конфигурации программы
-//                  filename    - имя файла журнала
-// Remarks .......:	Если путь каталога начинается с "\", то это считается подкаталогом в текущем каталоге
-//===============================================================================================================
+        /// <summary>
+        /// Инициализация объекта с указанием имени файла и каталога
+        /// Если путь каталога начинается с "\", то это считается подкаталогом в текущем каталоге
+        /// </summary>
+        /// <param name="dir"> путь каталога файла конфигурации </param>
+        /// <param name="filename"> имя файла конфигурации </param>
         public IniFile(string dir, string filename)
         {
             Init(dir, filename);
         } // IniFile(string, string)
 
-//===============================================================================================================
-// Name...........:	Init
-// Description....:	Начальная установка объекта
-// Syntax.........:	Init(dir, filename)
-// Parameters.....:	dir         - путь каталога файла конфигурации программы
-//                  filename    - имя файла журнала
-//===============================================================================================================
+        /// <summary>
+        /// Начальная установка объекта
+        /// </summary>
+        /// <param name="dir"> путь каталога файла конфигурации </param>
+        /// <param name="filename"> имя файла конфигурации </param>
         private void Init(string dir, string filename)
         {
             if (filename == "") filename = _defaultFileName;
@@ -75,16 +65,16 @@ namespace Common
             if (!File.Exists(_fileName)) _fileName = "";
         } // Init(string, string)
 
-//===============================================================================================================
-// Name...........:	ReadString
-// Description....:	Чтение строки из файла конфигурации программы
-// Syntax.........:	ReadString(section, key, value)
-// Parameters.....:	section     - имя секции в ini-файле
-//                  key         - имя параметра в ini-файле
-//                  value       - значение по умолчанию
-// Return value(s):	Success:    - значение считанного параметра
-//                  Failure:    - значение по умолчанию (value)
-//===============================================================================================================
+        /// <summary>
+        /// Чтение строки из файла конфигурации
+        /// </summary>
+        /// <param name="section"> имя секции в файле конфигурации </param>
+        /// <param name="key"> имя параметра в файле конфигурации </param>
+        /// <param name="value"> значение по умолчанию </param>
+        /// <returns>
+        /// Success: значение считанного параметра
+        /// Failure: значение по умолчанию (value)
+        /// </returns>
         public string ReadString(string section, string key, string value)
         {
             if (_fileName == "") return value;
@@ -94,16 +84,16 @@ namespace Common
             return temp.ToString();
         } // ReadString(string, string, string)
 
-//===============================================================================================================
-// Name...........:	ReadInt
-// Description....:	Чтение целочисленного значения из файла конфигурации программы
-// Syntax.........:	ReadInt(section, key, value)
-// Parameters.....:	section     - имя секции в ini-файле
-//                  key         - имя параметра в ini-файле
-//                  value       - значение по умолчанию 
-// Return value(s):	Success:    - значение считанного параметра
-//                  Failure:    - значение по умолчанию (value)
-//===============================================================================================================
+        /// <summary>
+        /// Чтение целочисленного значения из файла конфигурации
+        /// </summary>
+        /// <param name="section"> имя секции в файле конфигурации </param>
+        /// <param name="key"> имя параметра в файле конфигурации </param>
+        /// <param name="value"> значение по умолчанию </param>
+        /// <returns>
+        /// Success: значение считанного параметра
+        /// Failure: значение по умолчанию (value)
+        /// </returns>
         public int ReadInt(string section, string key, int value)
         {
             if (_fileName == "") return value;
@@ -114,16 +104,16 @@ namespace Common
             return result;
         } // ReadInt(string, string, int)
 
-//===============================================================================================================
-// Name...........:	ReadFloat
-// Description....:	Чтение числа с плавающей запятой из файла конфигурации программы
-// Syntax.........:	ReadFloat(section, key, value)
-// Parameters.....:	section     - имя секции в ini-файле
-//                  key         - имя параметра в ini-файле
-//                  value       - значение по умолчанию 
-// Return value(s):	Success:    - значение считанного параметра
-//                  Failure:    - значение по умолчанию (value)
-//===============================================================================================================
+        /// <summary>
+        /// Чтение числа с плавающей запятой из файла конфигурации
+        /// </summary>
+        /// <param name="section"> имя секции в файле конфигурации </param>
+        /// <param name="key"> имя параметра в файле конфигурации </param>
+        /// <param name="value"> значение по умолчанию </param>
+        /// <returns>
+        /// Success: значение считанного параметра
+        /// Failure: значение по умолчанию (value)
+        /// </returns>
         public float ReadFloat(string section, string key, float value)
         {
             if (_fileName == "") return value;
@@ -134,31 +124,31 @@ namespace Common
             return result;
         } // ReadFloat(string, string, int)
 
-//===============================================================================================================
-// Name...........:	ReadBool
-// Description....:	Чтение логического (boolean) значения из файла конфигурации программы
-// Syntax.........:	ReadBool(section, key, value)
-// Parameters.....:	section     - имя секции в ini-файле
-//                  key         - имя параметра в ini-файле
-//                  value       - значение по умолчанию 
-// Return value(s):	Success:    - значение считанного параметра
-//                  Failure:    - значение по умолчанию (value)
-//===============================================================================================================
+        /// <summary>
+        /// Чтение логического (boolean) значения из файла конфигурации
+        /// </summary>
+        /// <param name="section"> имя секции в файле конфигурации </param>
+        /// <param name="key"> имя параметра в файле конфигурации </param>
+        /// <param name="value"> значение по умолчанию </param>
+        /// <returns>
+        /// Success: значение считанного параметра
+        /// Failure: значение по умолчанию (value)
+        /// </returns>
         public bool ReadBool(string section, string key, bool value)
         {
             return ReadString(section, key, value.ToString()) == true.ToString();
         } // ReadBool(string, string, bool)
 
-//===============================================================================================================
-// Name...........:	ReadPassword
-// Description....:	Чтение зашифрованной строки из файла конфигурации программы
-// Syntax.........:	ReadPassword(section, key, value)
-// Parameters.....:	section     - имя секции в ini-файле
-//                  key         - имя параметра в ini-файле
-//                  value       - значение по умолчанию
-// Return value(s):	Success:    - значение считанного параметра
-//                  Failure:    - значение по умолчанию (value)
-//===============================================================================================================
+        /// <summary>
+        /// Чтение зашифрованной строки из файла конфигурации
+        /// </summary>
+        /// <param name="section"> имя секции в файле конфигурации </param>
+        /// <param name="key"> имя параметра в файле конфигурации </param>
+        /// <param name="value"> значение по умолчанию </param>
+        /// <returns>
+        /// Success: значение считанного параметра
+        /// Failure: значение по умолчанию (value)
+        /// </returns>
         public string ReadPassword(string section, string key, string value)
         {
             try
@@ -177,42 +167,36 @@ namespace Common
             }
         } // ReadString(string, string, string)
 
-//===============================================================================================================
-// Name...........:	WriteString
-// Description....:	Запись строки в файл конфигурации программы
-// Syntax.........:	WriteString(section, key, value)
-// Parameters.....:	section     - имя секции в ini-файле
-//                  key         - имя параметра в ini-файле
-//                  value       - значение параметра
-//===============================================================================================================
+        /// <summary>
+        /// Запись строки в файл конфигурации
+        /// </summary>
+        /// <param name="section"> имя секции в файле конфигурации </param>
+        /// <param name="key"> имя параметра в файле конфигурации </param>
+        /// <param name="value"> значение параметра </param>
         public void WriteString(string section, string key, string value)
         {
             if (_fileName == "") return;
             WritePrivateProfileString(section, key, value, _fileName);
         } // WriteString(string, string, string)
 
-//===============================================================================================================
-// Name...........:	WriteBool
-// Description....:	Запись значения типа boolean в файл конфигурации программы
-// Syntax.........:	WriteBool(section, key, value)
-// Parameters.....:	section     - имя секции в ini-файле
-//                  key         - имя параметра в ini-файле
-//                  value       - значение параметра
-//===============================================================================================================
+        /// <summary>
+        /// Запись значения типа boolean в файл конфигурации
+        /// </summary>
+        /// <param name="section"> имя секции в файле конфигурации </param>
+        /// <param name="key"> имя параметра в файле конфигурации </param>
+        /// <param name="value"> значение параметра </param>
         public void WriteBool(string section, string key, bool value)
         {
             if (_fileName == "") return;
             WritePrivateProfileString(section, key, value.ToString(), _fileName);
         } // WriteBool(string, string, bool)
 
-//===============================================================================================================
-// Name...........:	WritePassword
-// Description....:	Запись строки в файл конфигурации программы с шифрованием
-// Syntax.........:	WritePassword(section, key, value)
-// Parameters.....:	section     - имя секции в ini-файле
-//                  key         - имя параметра в ini-файле
-//                  value       - значение параметра
-//===============================================================================================================
+        /// <summary>
+        /// Запись строки в файл конфигурации с шифрованием
+        /// </summary>
+        /// <param name="section"> имя секции в файле конфигурации </param>
+        /// <param name="key"> имя параметра в файле конфигурации </param>
+        /// <param name="value"> значение параметра </param>
         public void WritePassword(string section, string key, string value)
         {
             if (_fileName == "") return;
@@ -247,4 +231,4 @@ namespace Common
             string filePath);
 
     } // class IniFile
-}
+} // namespace Common

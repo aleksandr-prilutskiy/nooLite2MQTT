@@ -1,15 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.ServiceProcess;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.ServiceProcess;
 
 namespace ServiceApp
 {
     static class Program
     {
         /// <summary>
+        /// Сервис сопряжения устройств nooLite c протоколом MQTT
+        /// Версия от 23.02.2022
         /// Главная точка входа для приложения.
         /// </summary>
         static void Main()

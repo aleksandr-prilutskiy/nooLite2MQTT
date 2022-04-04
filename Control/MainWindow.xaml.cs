@@ -54,7 +54,7 @@ namespace nooLiteControl
             MQTT = new MQTT();
             MQTT.OnMessageRead = MQTTMessageResive;
             MQTT.ReadConfig(IniFile);
-            MQTT.Connect();
+            //MQTT.Start();
             MQTT.Subscribe("#");
         } // MainWindow()
 
@@ -67,7 +67,7 @@ namespace nooLiteControl
             InitChannels();
             InitDevices();
             treeListСhannels.ItemsSource = Channels;
-            MQTT.MessageSend(_serviceTopic + "/GetState", "All");
+            MQTT.Publish(_serviceTopic + "/GetState", "All");
             DispatcherTimer dispatcherTimer = new DispatcherTimer();
             dispatcherTimer.Tick += new EventHandler(TimerTick);
             dispatcherTimer.Interval = new TimeSpan(0, 0, 0, 0, 100);
@@ -179,8 +179,8 @@ namespace nooLiteControl
         {
             Channel channel = CurrentChannel();
             if ((channel == null) || (channel.Count == 0)) return;
-            MQTT.MessageSend(TopicPrefix + channel.Index.ToString(), "ON");
-            MQTT.MessageSend(_serviceTopic + "/GetState", channel.Index.ToString());
+            MQTT.Publish(TopicPrefix + channel.Index.ToString(), "ON");
+            MQTT.Publish(_serviceTopic + "/GetState", channel.Index.ToString());
             SelectDevice(sender, e);
         } // DeviceOn(object, RoutedEventArgs)
 
@@ -188,8 +188,8 @@ namespace nooLiteControl
         {
             Channel channel = CurrentChannel();
             if ((channel == null) || (channel.Count == 0)) return;
-            MQTT.MessageSend(TopicPrefix + channel.Index.ToString(), "OFF");
-            MQTT.MessageSend(_serviceTopic + "/GetState", channel.Index.ToString());
+            MQTT.Publish(TopicPrefix + channel.Index.ToString(), "OFF");
+            MQTT.Publish(_serviceTopic + "/GetState", channel.Index.ToString());
             SelectDevice(sender, e);
         } // DeviceOff(object, RoutedEventArgs)
 

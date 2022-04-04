@@ -1,16 +1,15 @@
-﻿using nooLite2MQTT;
+﻿using Common;
+using nooLite2MQTT;
 using System;
 using System.IO;
 
 namespace ConsoleApp
 {
-//===============================================================================================================
-//
-// Сервис сопряжения устройств nooLite c протоколом MQTT
-// Программа для отладки сервиса в режиме консольного приложения
-// Версия от 22.09.2021
-//
-//===============================================================================================================
+    /// <summary>
+    /// Сервис сопряжения устройств nooLite c протоколом MQTT
+    /// Программа для отладки сервиса в режиме консольного приложения
+    /// Версия от 23.02.2022
+    /// </summary>
     class App
     {
         static void Main()
@@ -30,15 +29,15 @@ namespace ConsoleApp
                 ConsoleKeyInfo key = Console.ReadKey();
                 Console.WriteLine();
                 if ((key.KeyChar == 'Q') || (key.KeyChar == 'q')) break;
-                if (((key.KeyChar == 'R') || (key.KeyChar == 'r')) && (!Server.Run))
+                if ((key.KeyChar == 'R') || (key.KeyChar == 'r'))
                 {
                     service.OnStart();
-                    Console.WriteLine("Сервис запущен.");
+                    Console.WriteLine("Сервис запущен");
                 }
-                if (((key.KeyChar == 'S') || (key.KeyChar == 's')) && (Server.Run))
+                if ((key.KeyChar == 'S') || (key.KeyChar == 's'))
                 {
                     service.OnStop();
-                    Console.WriteLine("Сервис остановлен.");
+                    Console.WriteLine("Сервис остановлен");
                 }
                 if ((key.KeyChar == 'L') || (key.KeyChar == 'l'))
                     try
@@ -55,15 +54,27 @@ namespace ConsoleApp
                     catch { }
                 if ((key.KeyChar == 'T') || (key.KeyChar == 't')) 
                 {
-                    Console.WriteLine("Devices:");
-                    foreach (Server.Device device in Server.Devices)
-                        Console.WriteLine(" " + device.Channel.ToString("D2") + ": " + device.Addr +
-                            " = " + (device.State ? "ON" : "OFF") + " (" + device.Bright + "%)");
-                    Console.WriteLine("Sensors:");
-                    foreach (Server.Sensor sensor in Server.Sensors)
-                        Console.WriteLine(" " + sensor.Channel.ToString("D2") + ": " + 
-                            (sensor.Topic.Length > 0 ? sensor.Topic : "        ") +
-                            " = " + sensor.Value.ToString());
+                    Console.WriteLine("Channels:");
+                    for (byte i = 0; i < nooLite._сhannelCount; i++)
+                    {
+                        Channel channel = Server.Channels.Search(i);
+                        if (channel is null) continue;
+                        Console.WriteLine(" " + channel.Id.ToString("D2"));
+                        if (channel.Devices != null)
+                            foreach (Device device in channel?.Devices)
+                                Console.WriteLine("  Device [" + device.Addr + "] = " +
+                                    (device.State ? "ON" : "OFF") + " (" + device.Bright + "%)");
+                        if (channel.Sensors != null)
+                            foreach (Sensor sensor in channel.Sensors)
+                            {
+                                Console.WriteLine("  Sensor #" + sensor.Topic + " = " + sensor.Value);
+                                if (sensor.Links != null)
+                                    Console.WriteLine("  Links: " + string.Join(",", sensor.Links));
+                            }
+                    }
+                    Console.WriteLine("\nTopics:");
+                    foreach (string topic in Server.Topics)
+                        Console.WriteLine(" " + topic);
                 }
             }
             service.OnStop();

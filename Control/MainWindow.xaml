@@ -5,143 +5,229 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:nooLiteControl"
         mc:Ignorable="d"
-        Loaded="MainWindow_Loaded" Closed="Window_Closed"
+        Loaded="MainWindow_Loaded"
+        Closed="Window_Closed"
         Title="Сервис nooLite2MQTT - Управление устройствами"
-        WindowStyle="ToolWindow" ResizeMode="NoResize"
-        Width="585" Height="405">
+        WindowStyle="ToolWindow"
+        ResizeMode="NoResize"
+        Width="800"
+        Height="600">
     <Grid>
-        <TabControl Width="auto" Height="auto"
-                    Margin="10,0,10,10"  Background="White"
+        <TabControl Width="auto"
+                    Height="auto"
+                    Margin="10,0,10,10"
+                    Background="White"
                     SelectionChanged="TabControl_SelectionChanged">
-            <TabItem Header="Устройства" Background="White">
+            <TabItem Header="Устройства"
+                     FontSize="14"
+                     Background="White">
                 <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="40"/>
+                        <RowDefinition Height="50"/>
                         <RowDefinition />
                         <RowDefinition Height="32"/>
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="200"/>
+                        <ColumnDefinition Width="230"/>
                         <ColumnDefinition />
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="Каналы:" FontWeight="Bold"
-                               Grid.Row="0" Grid.RowSpan="2" Grid.Column="0"
-                               Margin="40,0,0,0"
+
+                    <TextBlock Text="Каналы:"
+                               FontSize="16"
+                               FontWeight="Bold"
+                               Grid.Row="0"
+                               Grid.RowSpan="2"
+                               Grid.Column="0"
+                               Margin="10,0,0,0"
                                VerticalAlignment="Top"
                                HorizontalAlignment="Left" />
-                    <DataGrid x:Name="treeListСhannels" ItemsSource="{Binding Сhannels}"
-                              Grid.Row="0" Grid.RowSpan="2" Grid.Column="0"
+                    <DataGrid x:Name="treeListСhannels"
+                              ItemsSource="{Binding Сhannels}"
+                              Grid.Row="0"
+                              Grid.RowSpan="2"
+                              Grid.Column="0"
                               Margin="10,20,5,10"
-                              HeadersVisibility="None" AutoGenerateColumns="False" IsReadOnly="True"
+                              HeadersVisibility="None"
+                              AutoGenerateColumns="False"
+                              IsReadOnly="True"
                               SelectionMode="Single"
                               CurrentCellChanged="SelectDevice" >
                         <DataGrid.Columns>
-                            <DataGridTextColumn Binding="{Binding _Index}" Width="30">
+                            <DataGridTextColumn Binding="{Binding _Index}"
+                                                FontSize="14"
+                                                Width="30">
                                 <DataGridTextColumn.CellStyle>
                                     <Style>
-                                        <Setter Property="TextBlock.TextAlignment"  Value="Right"/>
+                                        <Setter Property="TextBlock.TextAlignment"
+                                                Value="Right"/>
                                     </Style>
                                 </DataGridTextColumn.CellStyle>
                             </DataGridTextColumn>
-                            <DataGridTextColumn Binding="{Binding CountToStr}" Width="135" />
+                            <DataGridTextColumn Binding="{Binding CountToStr}"
+                                                FontSize="14"
+                                                Width="165" />
                         </DataGrid.Columns>
                         <DataGrid.RowStyle>
                             <Style TargetType="DataGridRow">
                                 <Style.Triggers>
-                                    <DataTrigger Binding="{Binding Count}" Value="0">
-                                        <Setter Property="Background" Value="LightGray"></Setter>
+                                    <DataTrigger Binding="{Binding Count}"
+                                                 Value="0">
+                                        <Setter Property="Background"
+                                                Value="LightGray" />
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
                         </DataGrid.RowStyle>
                     </DataGrid>
-                    <TextBlock Text="Описание:" FontWeight="Bold"
-                               Grid.Row="0" Grid.Column="1"
+                    
+                    <TextBlock Text="Описание:"
+                               FontSize="16"
+                               FontWeight="Bold"
+                               Grid.Row="0"
+                               Grid.Column="1"
                                Margin="10,0,0,0"
                                VerticalAlignment="Top"
                                HorizontalAlignment="Left" />
                     <TextBox x:Name="textDeviceTitle"
-                             Grid.Row="0" Grid.Column="1"
-                             Margin="5,20,80,0" Width="Auto" Height="20"
+                             Grid.Row="0"
+                             Grid.Column="1"
+                             Margin="5,20,80,0"
+                             Width="Auto"
+                             Height="25"
+                             FontSize="16"
                              VerticalAlignment="Top"/>
                     <Button Content="Сохранить"
-                            Grid.Row="0" Grid.Column="1"
-                            Width="60" Height="20"
+                            Grid.Row="0"
+                            Grid.Column="1"
+                            Width="60"
+                            Height="20"
                             FontSize="10"
                             Margin="0,20,10,0"
                             VerticalAlignment="Top"
                             HorizontalAlignment="Right"
                             Click="SetTitle" />
-                    <TextBlock Text="Устройства привязанные к каналу:" FontWeight="Bold"
-                               Grid.Row="1" Grid.Column="1"
+                    <TextBlock Text="Устройства привязанные к каналу:"
+                               FontSize="16"
+                               FontWeight="Bold"
+                               Grid.Row="1"
+                               Grid.Column="1"
                                Margin="10,5,0,0"
                                VerticalAlignment="Top"
                                HorizontalAlignment="Left" />
-                    <DataGrid x:Name="gridListDevices" ItemsSource="{Binding Devices}" IsReadOnly="True"
-                              Grid.Row="1" Grid.Column="1" Margin="5,25,10,10"
+                    <DataGrid x:Name="gridListDevices"
+                              ItemsSource="{Binding Devices}"
+                              IsReadOnly="True"
+                              Grid.Row="1"
+                              Grid.Column="1"
+                              Margin="5,25,10,10"
                               HeadersVisibility="All"
                               ScrollViewer.VerticalScrollBarVisibility="Visible"
                               AutoGenerateColumns="False">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Binding="{Binding TypeToStr}" Header="Тип" Width="84" />
-                            <DataGridTextColumn Binding="{Binding StateToStr}" Header="Сост." Width="50">
+                            <DataGridTextColumn Binding="{Binding TypeToStr}"
+                                                Header="Тип"
+                                                Width="84" />
+                            <DataGridTextColumn Binding="{Binding StateToStr}"
+                                                Header="Сост."
+                                                Width="50">
                                 <DataGridTextColumn.CellStyle>
                                     <Style>
-                                        <Setter Property="TextBlock.TextAlignment"  Value="Center"/>
+                                        <Setter Property="TextBlock.TextAlignment"
+                                                Value="Center"/>
                                     </Style>
                                 </DataGridTextColumn.CellStyle>
                             </DataGridTextColumn>
-                            <DataGridTextColumn Binding="{Binding BrightToStr}" Header="Яркость" Width="60">
+                            <DataGridTextColumn Binding="{Binding BrightToStr}"
+                                                Header="Яркость"
+                                                Width="60">
                                 <DataGridTextColumn.CellStyle>
                                     <Style>
-                                        <Setter Property="TextBlock.TextAlignment"  Value="Center"/>
+                                        <Setter Property="TextBlock.TextAlignment"
+                                                Value="Center"/>
                                     </Style>
                                 </DataGridTextColumn.CellStyle>
                             </DataGridTextColumn>
-                            <DataGridTextColumn Binding="{Binding VersionToStr}" Header="ПО" Width="40">
+                            <DataGridTextColumn Binding="{Binding VersionToStr}"
+                                                Header="ПО"
+                                                Width="40">
                                 <DataGridTextColumn.CellStyle>
                                     <Style>
-                                        <Setter Property="TextBlock.TextAlignment"  Value="Center"/>
+                                        <Setter Property="TextBlock.TextAlignment"
+                                                Value="Center"/>
                                     </Style>
                                 </DataGridTextColumn.CellStyle>
                             </DataGridTextColumn>
-                            <DataGridTextColumn Binding="{Binding AddrToStr}" Header="Адрес" Width="70">
+                            <DataGridTextColumn Binding="{Binding AddrToStr}"
+                                                Header="Адрес"
+                                                Width="70">
                                 <DataGridTextColumn.CellStyle>
                                     <Style>
-                                        <Setter Property="TextBlock.TextAlignment"  Value="Center"/>
+                                        <Setter Property="TextBlock.TextAlignment"
+                                                Value="Center"/>
                                     </Style>
                                 </DataGridTextColumn.CellStyle>
                             </DataGridTextColumn>
                         </DataGrid.Columns>
                     </DataGrid>
-                    <Button x:Name="buttonOn" Content="Включить"
-                            Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
-                            Width="120" Height="25"
+                    
+                    <Button x:Name="buttonOn"
+                            Content="Включить"
+                            Grid.Row="2"
+                            Grid.Column="0"
+                            Grid.ColumnSpan="2"
+                            Width="120"
+                            Height="25"
                             Margin="10,0,0,5"
                             HorizontalAlignment="Left"
-                            Click="DeviceOn" IsEnabled="False" />
-                    <Button x:Name="buttonOff" Content="Выключить"
-                            Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
-                            Width="120" Height="25"
+                            Click="DeviceOn"
+                            IsEnabled="False" />
+                    <Button x:Name="buttonOff"
+                            Content="Выключить"
+                            Grid.Row="2"
+                            Grid.Column="0"
+                            Grid.ColumnSpan="2"
+                            Width="120"
+                            Height="25"
                             Margin="145,0,0,5"
                             HorizontalAlignment="Left"
-                            Click="DeviceOff" IsEnabled="False" />
-                    <Button x:Name="buttonBinding" Content="Привязать"
-                            Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
-                            Width="120" Height="25"
+                            Click="DeviceOff"
+                            IsEnabled="False" />
+                    <Button x:Name="buttonBinding"
+                            Content="Привязать"
+                            Grid.Row="2"
+                            Grid.Column="0"
+                            Grid.ColumnSpan="2"
+                            Width="120"
+                            Height="25"
                             Margin="280,0,0,5"
                             HorizontalAlignment="Left"
                             Click="Button_Setup" />
-                    <Button x:Name="buttonClear" Content="Отвязать все"
-                            Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
-                            Width="120" Height="25"
+                    <Button x:Name="buttonClear"
+                            Content="Отвязать все"
+                            Grid.Row="2"
+                            Grid.Column="0"
+                            Grid.ColumnSpan="2"
+                            Width="120"
+                            Height="25"
                             Margin="415,0,0,5"
                             HorizontalAlignment="Left"
-                            Click="CancelSetup" IsEnabled="False" />
+                            Click="CancelSetup"
+                            IsEnabled="False" />
                 </Grid>
             </TabItem>
-            <TabItem Header="Журнал MQTT" Background="White">
-                <ListBox x:Name="logMQTT" Height="Auto" Width="Auto"/>
+            <TabItem Header="MQTT"
+                     FontSize="14"
+                     Background="White">
+                <ListBox x:Name="logMQTT"
+                         Height="Auto"
+                         Width="Auto" />
+            </TabItem>
+            <TabItem Header="Журнал"
+                     FontSize="14"
+                     Background="White">
+                <ListBox x:Name="logService"
+                         Height="Auto"
+                         Width="Auto" />
             </TabItem>
         </TabControl>
     </Grid>

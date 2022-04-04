@@ -85,6 +85,10 @@
       <Project>{059912a3-328c-409b-99c3-859c0fade11b}</Project>
       <Name>Common</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Server\Server.csproj">
+      <Project>{d13f4b87-9942-457e-af53-f14fb78d27aa}</Project>
+      <Name>Server</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Content Include="ServiceIcon.ico" />
