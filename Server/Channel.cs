@@ -5,20 +5,40 @@ namespace nooLite2MQTT
 {
     /// <summary>
     /// Объект - канал привязки устройств nooLite
-    /// Версия от 04.04.2022
     /// </summary>
+    /// Версия от 06.01.2023
     public class Channel
     {
-        public byte Id { get; set; }           // Номер канала (0-63)
-        public bool CanSetBrightness;          // Возможность управления яркостью устройств nooLite
-        public List<Device> Devices { get; set; } // Список привязанных устройств
-        public List<Sensor> Sensors;           // Список датчиков nooLite
-        public bool State                      // Состояние канала: true: вкл; false: выкл
+        /// <summary>
+        /// Номер канала (0-63)
+        /// </summary>
+        public byte Id { get; set; }
+
+        /// <summary>
+        /// Возможность управления яркостью устройств nooLite
+        /// </summary>
+        public bool CanSetBrightness;
+
+        /// <summary>
+        /// Список привязанных устройств
+        /// </summary>
+        public List<Device> Devices { get; set; }
+
+        /// <summary>
+        /// Список датчиков nooLite
+        /// </summary>
+        public List<Sensor> Sensors;
+
+        /// <summary>
+        /// Состояние канала: true: вкл; false: выкл
+        /// </summary>
+        public bool State
         {
             get
             {
                 foreach (Device device in Devices)
-                    if (device.State) return true;
+                    if (device.State)
+                        return true;
                 return false;
             }
         } // State
@@ -33,20 +53,18 @@ namespace nooLite2MQTT
             CanSetBrightness = false;
             Devices = null;
             Sensors = null;
-        } // Channel()
+        } // Channel(byte)
 
         /// <summary>
         ///	Поиск канала по номеру
         /// </summary>
         /// <param name="addr"> уникальный (аппаратный) адрес устройства в текстовом виде </param>
-        /// <returns>
-        /// Success: соотвествующий объект - исполнительное устройство nooLite
-        /// Failure: null
-        /// </returns>
+        /// <returns> Соотвествующий объект - исполнительное устройство nooLite или null </returns>
         public Device DeviceSearch(string addr)
         {
             foreach (Device device in Devices)
-                if (device.Addr == addr) return device;
+                if (device.Addr == addr)
+                    return device;
             return null;
         } // DeviceSearch(string)
 
@@ -54,11 +72,10 @@ namespace nooLite2MQTT
         /// Отправка команды устройствам nooLite, привязанным к каналу
         /// </summary>
         /// <param name="command"> код команды </param>
-        /// <param name="data"> 32 битное целое, которым будет заполнены поля D0, D1, D2 и D3 </param>
+        /// <param name="data"> [необязательный] 32 битное целое, которым будет заполнены поля D0, D1, D2 и D3 </param>
         public void SendCommand(nooLite.Command command, uint data = 0)
         {
             Server.Channels.SendCommand(Id, command, data);
-        } // SendCommand(nooLite.Command, uint)
-
+        } // SendCommand(nooLite.Command, [uint])
     } // class Channel
-}
+} // namespace nooLite2MQTT

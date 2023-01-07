@@ -1,5 +1,4 @@
 ﻿using Common;
-using System;
 using System.Collections.Generic;
 using System.Threading;
 
@@ -8,14 +7,29 @@ namespace nooLite2MQTT
     /// <summary>
     /// Сервис сопряжения устройств nooLite c протоколом MQTT
     /// Объект и функции для работы с каналами адаптера MTRF-64-USB
-    /// Версия от 04.04.2022
+    /// Версия от 06.01.2023
     /// </summary>
     public class Channels
     {
-        private readonly LogFile _fileLog = null;    // Ссылка на объект - журнал работы приложения
-        private readonly MQTT _MQTT;                 // Ссылка на объект для работы с брокером MQTT
-        private readonly nooLite _nooLite;           // Ссылка на объект для работы с адаптером nooLite MTRF-64-USB
-        private List<Channel> _channels;             // Список каналов привязки устройств nooLite
+        /// <summary>
+        /// Ссылка на объект - журнал работы приложения
+        /// </summary>
+        private readonly LogFile _fileLog = null;
+
+        /// <summary>
+        /// Ссылка на объект для работы с брокером MQTT
+        /// </summary>
+        private readonly MQTT _MQTT;
+
+        /// <summary>
+        /// Ссылка на объект для работы с адаптером nooLite MTRF-64-USB
+        /// </summary>
+        private readonly nooLite _nooLite;
+
+        /// <summary>
+        /// Список каналов привязки устройств nooLite
+        /// </summary>
+        private List<Channel> _channels;
 
         //private static DateTime nooLiteScanTimer;    // Таймер опроса состояния устройств nooLite
         //private const uint _nooLite_Update = 60000;  // Пероид таймера опроса состояния устройств nooLite
@@ -23,7 +37,9 @@ namespace nooLite2MQTT
         /// <summary>
         /// Инициализация объекта
         /// </summary>
-        /// <param name="fileLog"> ссылка на оъект для работы с файлом журнала </param>
+        /// <param name="MQTT"> объект для работы с брокером MQTT </param>
+        /// <param name="nooLite"> объект для работы с адаптером nooLite MTRF-64-USB </param>
+        /// <param name="fileLog"> [необязательный] ссылка на оъект для работы с файлом журнала </param>
         public Channels(MQTT MQTT, nooLite nooLite, LogFile fileLog = null)
         {
             _MQTT = MQTT;
@@ -36,10 +52,7 @@ namespace nooLite2MQTT
         /// Поиск канала по номеру
         /// </summary>
         /// <param name="id"> номер канала </param>
-        /// <returns>
-        /// Success: соотвествующий канал привязки устройств nooLite
-        /// Failure: null
-        /// </returns>
+        /// <returns> Соотвествующий канал привязки устройств nooLite или null </returns>
         public Channel Search(byte id)
         {
             foreach (Channel channel in _channels)
@@ -55,11 +68,12 @@ namespace nooLite2MQTT
         {
             _channels.Clear();
             Channel channel;
-            for (byte id = 1; id < nooLite._сhannelCount; id++)
+            for (byte id = 1; id < nooLite.ChannelCount; id++)
             {
                 string section = "Channel#" + id.ToString();
                 string type = IniFile.ReadString(section, "Type", "");
-                if (type.Length == 0) continue;
+                if (type.Length == 0)
+                    continue;
                 switch (type.ToLower())
                 {
                     case "device":
@@ -110,16 +124,17 @@ namespace nooLite2MQTT
         /// <summary>
         /// Запуск потока для поддержания подключения к брокеру MQTT
         /// </summary>
+        /// <param name="cancelToken"> токен для завершения потока </param>
         public void Start(CancellationToken cancelToken)
         {
             Thread _handler = new Thread(() => Handler(this, cancelToken));
             _handler.Start();
-        } // Start()
+        } // Start(CancellationToken)
 
         /// <summary>
-        /// Обработчик потока ...
+        /// Обработчик потока
         /// </summary>
-        /// <param name="Channels"> ссылка на объект ... </param>
+        /// <param name="Channels"> список каналов </param>
         /// <param name="cancelToken"> токен для завершения потока </param>
         private static void Handler(Channels Channels, CancellationToken cancelToken)
         {
@@ -127,10 +142,12 @@ namespace nooLite2MQTT
             {
                 Thread.Sleep(500);
                 byte[] buffer = Channels._nooLite.GetMessage();
-                if (buffer is null) continue;
+                if (buffer is null)
+                    continue;
                 byte command = buffer[(byte)nooLite.Data.Cmd];
                 Channel channel = Channels.Search(buffer[(byte)nooLite.Data.Ch]);
-                if ((channel is null) || (channel.Sensors is null)) continue;
+                if ((channel is null) || (channel.Sensors is null))
+                    continue;
                 foreach (Sensor sensor in channel.Sensors)
                     switch (sensor.Type)
                     {
@@ -163,12 +180,15 @@ namespace nooLite2MQTT
         /// <param name="id"> номер канала </param>
         public void Bind(byte id)
         {
-            if (id >= nooLite._сhannelCount) return;
+            if (id >= nooLite.ChannelCount)
+                return;
             List<byte[]> read = _nooLite.SendCommand(id, nooLite.Command.Bind);
-            if (read is null) return;
+            if (read is null)
+                return;
             foreach (byte[] package in read)
             {
-                if (package[(byte)nooLite.Data.Cmd] != (byte)nooLite.Command.SendState) return;
+                if (package[(byte)nooLite.Data.Cmd] != (byte)nooLite.Command.SendState)
+                    return;
                 Channel channel = Search(package[(byte)nooLite.Data.Ch]);
                 if (channel is null)
                 {
@@ -196,32 +216,36 @@ namespace nooLite2MQTT
         /// <param name="id"> номер канала </param>
         public void Delete(byte id)
         {
-            if (id >= nooLite._сhannelCount) return;
+            if (id >= nooLite.ChannelCount)
+                return;
             Channel channel = Search(id);
-            if (channel is null) return;
+            if (channel is null)
+                return;
             byte[] package = _nooLite.CreatePackage((byte)nooLite.WorkMode.TxF, id, 0x00);
             package[(byte)nooLite.Data.Ctr] = 0x05;
             uint crc = 0;
-            for (int i = 0; i < (byte)nooLite.Data.Crc; i++) crc += package[i];
+            for (int i = 0; i < (byte)nooLite.Data.Crc; i++)
+                crc += package[i];
             package[(byte)nooLite.Data.Crc] = (byte)(crc & 0xFF);
             _nooLite.SendCommand(package, false);
             List<byte[]> read = _nooLite.SendCommand(id, nooLite.Command.ReadState);
-            if (read != null) return;
+            if (read != null)
+                return;
             channel.Devices.Clear();
             if (channel.Sensors.Count == 0) _channels.Remove(channel);
-        } // Delete()
-
+        } // Delete(byte)
 
         /// <summary>
         /// Отправка команды устройствам nooLite, привязанным к заданному каналу и обработка ответа
         /// </summary>
         /// <param name="id"> номер канала привязки устройства (0-63) </param>
         /// <param name="command"> код команды </param>
-        /// <param name="data"> 32 битное целое, которым будет заполнены поля D0, D1, D2 и D3 </param>
+        /// <param name="data"> [необязательный] 32 битное целое, которым будет заполнены поля D0, D1, D2 и D3 </param>
         public void SendCommand(byte id, nooLite.Command command, uint data = 0)
         {
             List<byte[]> readPackages = _nooLite.SendCommand(id, command, 0x00, data);
-            if (readPackages is null) return;
+            if (readPackages is null)
+                return;
             foreach (byte[] package in readPackages)
             {
                 //if (ScanMode == ScanModes.Full)
@@ -236,7 +260,8 @@ namespace nooLite2MQTT
                     SendCommand(id, command, data);
                     return;
                 }
-                if (package[(byte)nooLite.Data.Cmd] != (byte)nooLite.Command.SendState) return;
+                if (package[(byte)nooLite.Data.Cmd] != (byte)nooLite.Command.SendState)
+                    return;
                 Channel channel = Search(package[(byte)nooLite.Data.Ch]);
                 if (channel is null)
                 {
@@ -262,7 +287,7 @@ namespace nooLite2MQTT
                 //    (channel == Channels[Channels.Count - 1]))
                 //    ScanMode = ScanModes.Done;
             }
-        } // SendCommand(byte, nooLite.Command, uint)
+        } // SendCommand(byte, nooLite.Command, [uint])
 
         /// <summary>
         /// Вывод списка каналов nooLite в файл журнала
@@ -287,6 +312,5 @@ namespace nooLite2MQTT
         //        }
         //    }
         //} // ChannelsToLog()
-
     } // class Server
-}
+} // namespace nooLite2MQTT

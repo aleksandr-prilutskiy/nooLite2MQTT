@@ -6,33 +6,58 @@ namespace Common
 {
     /// <summary>
     /// Объект для работы с файлом журнала с буфером отложеной записи
-    /// Версия от 04.04.2022
     /// </summary>
+    /// Версия от 01.01.2023
     public class LogFile
     {
-        public long FileMaxSize = 10485760;                       // Максимальный размер файла (в байтах)
-        private const string _defaultFileName = "app.log";        // Имя файла журнала по умолчанию
-        private const int _tryTimeout = 1000;                     // Время попытки записи в файл
-        private string _fileName;                                 // Имя файла журнала с полным путем
-        private List<string> _buffer;                             // Буфер отложенной записи
-        private bool _busy = false; 
-        
-        public bool Available                                     // Проверка что журнал доступен для записи
+        /// <summary>
+        /// Максимальный размер файла (в байтах)
+        /// </summary>
+        public long FileMaxSize = 10485760;
+
+        /// <summary>
+        /// Имя файла журнала по умолчанию
+        /// </summary>
+        private const string _fileNameDefault = "app.log";
+
+        /// <summary>
+        /// Время ожидания записи в файл (в миллисекундах)
+        /// </summary>
+        private const int _tryTimeout = 1000;
+
+        /// <summary>
+        /// Буфер отложенной записи
+        /// </summary>
+        private List<string> _buffer;
+
+        /// <summary>
+        /// Буфер отложенной записи
+        /// </summary>
+        private bool _busy = false;
+
+        /// <summary>
+        /// Проверка доступа журнала для записи
+        /// </summary>
+        public bool Available
         {
-            get { return _fileName != ""; }
+            get { return !string.IsNullOrEmpty(_fileName); }
         } // Available
-        
-        public string FileName                                    // Полный путь и имя файла журнала
+
+        /// <summary>
+        /// Полный путь и имя файла журнала
+        /// </summary>
+        public string FileName
         {
             get { return _fileName; }
         } // FileName
+        private string _fileName;
 
         /// <summary>
         /// Инициализация объекта с именем файла журнала по умолчанию
         /// </summary>
         public LogFile()
         {
-            Init("", "");
+            Init(string.Empty, string.Empty);
         } // LogFile()
 
         /// <summary>
@@ -41,7 +66,7 @@ namespace Common
         /// <param name="filename"> имя файла журнала </param>
         public LogFile(string filename)
         {
-            Init("", filename);
+            Init(string.Empty, filename);
         } // LogFile(string)
 
         /// <summary>
@@ -63,11 +88,13 @@ namespace Common
         private void Init(string dir, string filename)
         {
             _buffer = new List<string>();
-            if (filename == "") filename = _defaultFileName;
+            if (string.IsNullOrEmpty(filename))
+                filename = _fileNameDefault;
             string path = AppDomain.CurrentDomain.BaseDirectory;
-            if (dir.Length > 0)
+            if (!string.IsNullOrEmpty(dir))
                 path = (dir.Substring(0, 1) == "\\") ? path + dir.Substring(1) : dir;
-            if (path.Substring(path.Length - 1) != "\\") path += "\\";
+            if (path.Substring(path.Length - 1) != "\\")
+                path += "\\";
             if (!Directory.Exists(path)) Directory.CreateDirectory(path);
             _fileName = path + filename;
             StreamWriter file = null;
@@ -77,7 +104,7 @@ namespace Common
             }
             catch (Exception)
             {
-                _fileName = "";
+                _fileName = string.Empty;
             }
             finally
             {
@@ -92,7 +119,9 @@ namespace Common
         /// <param name="message"> текст сообщения </param>
         public void Write(string message)
         {
-            if ((_fileName == "") || (message == "")) return;
+            if ((string.IsNullOrEmpty(_fileName)) ||
+                (string.IsNullOrEmpty(message)))
+                return;
             FileInfo fileinfo = new FileInfo(_fileName);
             bool append = (fileinfo?.Length < FileMaxSize);
             if (message.Substring(0, 1) == "@")
@@ -109,7 +138,7 @@ namespace Common
                 }
                 catch (Exception) {}
             }
-            _fileName = "";
+            _fileName = string.Empty;
         } // void Write(string)
 
         /// <summary>
@@ -119,7 +148,9 @@ namespace Common
         /// <param name="message"> текст сообщения </param>
         public void Add(string message)
         {
-            if ((_fileName == "") || (message == "")) return;
+            if ((string.IsNullOrEmpty(_fileName)) ||
+                (string.IsNullOrEmpty(message)))
+                return;
             if (message.Substring(0, 1) == "@")
                 message = DateTime.Now.ToString("HH:mm:ss:ffff dd.MM.yyyy: ") + message.Substring(1);
             while (_busy) ;
@@ -133,10 +164,11 @@ namespace Common
         /// </summary>
         public void Save()
         {
-            if (_fileName == "") return;
+            if (string.IsNullOrEmpty(_fileName))
+                return;
             FileInfo fileinfo = new FileInfo(_fileName);
             bool append = fileinfo?.Length < FileMaxSize;
-            while (_busy);
+            while (_busy) ;
             _busy = true;
             DateTime timer = DateTime.Now.AddMilliseconds(_tryTimeout);
             while (DateTime.Now < timer)
@@ -155,9 +187,8 @@ namespace Common
                 }
                 catch (Exception) { }
             }
-            _fileName = "";
+            _fileName = string.Empty;
             _busy = false;
         } // void Save()
-
     } // class LogFile
 } // namespace Common

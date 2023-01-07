@@ -1,0 +1,236 @@
+﻿<Window x:Class="TrayMonitor.WindowSetup"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        ShowInTaskbar="False"
+        WindowStyle="ToolWindow"
+        ResizeMode="NoResize"
+        Topmost="True"
+        Closing="WindowClosing"
+        Width="500"
+        Height="300">
+    <Window.Resources>
+        <BitmapImage x:Key="logoMQTT"
+                     UriSource="pack://application:,,,/Resources/MQTT.png" />
+    </Window.Resources>
+    <Grid>
+        <TabControl Width="auto"
+                    Height="auto"
+                    Margin="10,0,10,10"
+                    Background="White">
+            <TabItem x:Name="tabGeneral"
+                     Header="Общее"
+                     Background="White">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition />
+                        <RowDefinition Height="35"/>
+                        <RowDefinition Height="25"/>
+                        <RowDefinition Height="25"/>
+                        <RowDefinition Height="25"/>
+                        <RowDefinition />
+                        <RowDefinition Height="50"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="COM-порт nooLite MTRF-64-USB:"
+                               Grid.Row="1"
+                               Grid.Column="0"
+                               Margin="40,0,-30,0"
+                               VerticalAlignment="Center"
+                               HorizontalAlignment="Right" />
+                    <ComboBox x:Name="setupPortMTRF64"
+                              Grid.Row="1"
+                              Grid.Column="1"
+                              Margin="45,0,0,0"
+                              Width="65"
+                              VerticalAlignment="Center"
+                              HorizontalAlignment="Left" />
+                    <CheckBox x:Name="setupAppAutostart"
+                              Content="Запускать программу при старте Windows"
+                              Grid.Row="2"
+                              Grid.Column="0"
+                              Grid.ColumnSpan="2"
+                              Margin="80,0,0,0"
+                              HorizontalAlignment="Left" />
+                    <CheckBox x:Name="setupModeDebug"
+                              Content="Режим отладки"
+                              Grid.Row="3"
+                              Grid.Column="0"
+                              Grid.ColumnSpan="2"
+                              Margin="80,0,0,0"
+                              HorizontalAlignment="Left" />
+                    <CheckBox x:Name="setupModeAssist"
+                              Content="Режим контроля включения исполнительных модулей"
+                              Grid.Row="4"
+                              Grid.Column="0"
+                              Grid.ColumnSpan="2"
+                              Margin="80,0,0,0"
+                              HorizontalAlignment="Left" />
+                    <Button Content="Сохранить"
+                            Grid.Row="7"
+                            Grid.Column="0"
+                            Width="120"
+                            Height="30"
+                            Margin="10,10,10,10"
+                            HorizontalAlignment="Right"
+                            Click="ButtonClick_Save" />
+                    <Button Content="Отменить"
+                            Grid.Row="7"
+                            Grid.Column="1"
+                            Width="120"
+                            Height="30"
+                            Margin="10,10,10,10"
+                            HorizontalAlignment="Left"
+                            Click="ButtonClick_Cancel" />
+                </Grid>
+            </TabItem>
+            <TabItem Header="MQTT"
+                     Background="White">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="60"/>
+                        <RowDefinition />
+                        <RowDefinition Height="25"/>
+                        <RowDefinition Height="25"/>
+                        <RowDefinition Height="25"/>
+                        <RowDefinition Height="25"/>
+                        <RowDefinition />
+                        <RowDefinition Height="50"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <Image Grid.Row="0"
+                           Grid.Column="0"
+                           Grid.ColumnSpan="2"
+                           Source="{StaticResource logoMQTT}"
+                           Height="50"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center" />
+                    <TextBlock Text="IP-адрес брокера:"
+                               Grid.Row="2"
+                               Grid.Column="0"
+                               Margin="0,0,10,0"
+                               HorizontalAlignment="Right"
+                               VerticalAlignment="Center"/>
+                    <TextBox x:Name="setupMQTT_Host"
+                             Text=""
+                             Grid.Row="2"
+                             Grid.Column="1"
+                             Width="100"
+                             Height="20"
+                             HorizontalAlignment="Left" />
+                    <TextBlock Text="Порт брокера:"
+                               Grid.Row="3"
+                               Grid.Column="0"
+                               Margin="0,0,10,0"
+                               HorizontalAlignment="Right"
+                               VerticalAlignment="Center" />
+                    <TextBox x:Name="setupMQTT_Port"
+                             Text=""
+                             Grid.Row="3"
+                             Grid.Column="1"
+                             Width="50"
+                             Height="20"
+                             HorizontalAlignment="Left" />
+                    <TextBlock Text="Имя пользователя:"
+                               Grid.Row="4"
+                               Grid.Column="0"
+                               Margin="0,0,10,0"
+                               HorizontalAlignment="Right"
+                               VerticalAlignment="Center"/>
+                    <TextBox x:Name="setupMQTT_User"
+                             Text=""
+                             Grid.Row="4"
+                             Grid.Column="1"
+                             Width="150"
+                             Height="20"
+                             HorizontalAlignment="Left" />
+                    <TextBlock Text="Пароль:"
+                               Grid.Row="5"
+                               Grid.Column="0"
+                               Margin="0,0,10,0"
+                               HorizontalAlignment="Right"
+                               VerticalAlignment="Center"/>
+                    <PasswordBox x:Name="setupMQTT_Pass"
+                                 Password=""
+                                 Grid.Row="5"
+                                 Grid.Column="1"
+                                 Width="150"
+                                 Height="20"
+                                 HorizontalAlignment="Left" />
+                    <Button Content="Проверить"
+                            Grid.Row="2"
+                            Grid.Column="1"
+                            Grid.RowSpan="2"
+                            Width="80"
+                            Height="25"
+                            Margin="0,0,30,0"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            Click="TestMQTTConnect" />
+                    <Button Content="Сохранить"
+                            Grid.Row="7"
+                            Grid.Column="0"
+                            Width="120"
+                            Height="30"
+                            Margin="10,10,10,10"
+                            HorizontalAlignment="Right"
+                            Click="ButtonClick_Save" />
+                    <Button Content="Отменить"
+                            Grid.Row="7"
+                            Grid.Column="1"
+                            Width="120"
+                            Height="30"
+                            Margin="10,10,10,10"
+                            HorizontalAlignment="Left"
+                            Click="ButtonClick_Cancel" />
+                </Grid>
+            </TabItem>
+            <TabItem Header="О программе"
+                     Background="White">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="160" />
+                        <RowDefinition Height="30" />
+                        <RowDefinition Height="25" />
+                        <RowDefinition />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <Image Source="pack://application:,,,/Resources/Logo.png"
+                           Grid.Row="0"
+                           Grid.Column="0"
+                           Width="285"
+                           Height="150"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Top" />
+                    <Label Grid.Row="1"
+                           Grid.Column="0"
+                           Margin="10,0,10,0"
+                           Foreground="Black"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Top">
+                        <TextBlock x:Name="AboutText"
+                                   HorizontalAlignment="Center"
+                                   TextWrapping="Wrap" />
+                    </Label>
+                    <Label x:Name="VersionText"
+                           Grid.Row="2"
+                           Grid.Column="0"
+                           Margin="10,0,10,0"
+                           Foreground="Black"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Top" />
+                </Grid>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</Window>

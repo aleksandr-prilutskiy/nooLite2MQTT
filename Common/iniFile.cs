@@ -7,31 +7,38 @@ namespace Common
 {
     /// <summary>
     /// Объект для работы с файлом конфигурации программы
-    /// Версия от 23.02.2022
     /// </summary>
+    /// Версия от 01.01.2023
     public class IniFile
     {
-        private const string _defaultFileName = "Config.ini";   // Имя файла конфигурации по умолчанию
-        private string _fileName = "";                          // Имя файла конфигурации с полным путем
-        private string _encryptionKey = "g360Vdoug0Dl8d71";     // Ключ шифрования паролей
-        private string _encryptionIV = "jHP0o90czCkRpM3Z";      // Вектор инициализации шифрования паролей
+        /// <summary>
+        /// Имя файла конфигурации по умолчанию
+        /// </summary>
+        private const string _fileNameDefault = "Config.ini";
 
         /// <summary>
-        /// Инициализация объекта с именем файла по умолчанию
+        /// Имя файла конфигурации с полным путем
         /// </summary>
-        public IniFile()
-        {
-            Init("", "");
-        } // IniFile()
+        private string _fileName = string.Empty;
+
+        /// <summary>
+        /// Ключ шифрования паролей
+        /// </summary>
+        private string _encryptionKey = "g360Vdoug0Dl8d71";
+
+        /// <summary>
+        /// Вектор инициализации шифрования паролей
+        /// </summary>
+        private string _encryptionIV = "jHP0o90czCkRpM3Z";
 
         /// <summary>
         /// Инициализация объекта с указанием имени файла
         /// </summary>
         /// <param name="filename"> имя файла конфигурации </param>
-        public IniFile(string filename)
+        public IniFile(string filename = "")
         {
-            Init("", filename);
-        } // IniFile(string)
+            Init(string.Empty, filename);
+        } // IniFile([string])
 
         /// <summary>
         /// Инициализация объекта с указанием имени файла и каталога
@@ -51,18 +58,21 @@ namespace Common
         /// <param name="filename"> имя файла конфигурации </param>
         private void Init(string dir, string filename)
         {
-            if (filename == "") filename = _defaultFileName;
+            if (string.IsNullOrEmpty(filename))
+                filename = _fileNameDefault;
             string path = AppDomain.CurrentDomain.BaseDirectory;
-            if (dir.Length > 0)
+            if (!string.IsNullOrEmpty(dir))
                 path = (dir.Substring(0, 1) == "\\") ? path + dir.Substring(1) : dir;
-            if (path.Substring(path.Length - 1) != "\\") path += "\\";
+            if (path.Substring(path.Length - 1) != "\\")
+                path += "\\";
             _fileName = AppDomain.CurrentDomain.BaseDirectory + filename;
             if (!File.Exists(_fileName))
             {
                 StreamWriter file = new StreamWriter(_fileName);
                 file.Close();
             }
-            if (!File.Exists(_fileName)) _fileName = "";
+            if (!File.Exists(_fileName))
+                _fileName = string.Empty;
         } // Init(string, string)
 
         /// <summary>
@@ -71,13 +81,11 @@ namespace Common
         /// <param name="section"> имя секции в файле конфигурации </param>
         /// <param name="key"> имя параметра в файле конфигурации </param>
         /// <param name="value"> значение по умолчанию </param>
-        /// <returns>
-        /// Success: значение считанного параметра
-        /// Failure: значение по умолчанию (value)
-        /// </returns>
-        public string ReadString(string section, string key, string value)
+        /// <returns> значение считанного параметра или значение по умолчанию </returns>
+        public string ReadString(string section, string key, string value = "")
         {
-            if (_fileName == "") return value;
+            if (string.IsNullOrEmpty(_fileName))
+                return value;
             const int bufferSize = 255;
             StringBuilder temp = new StringBuilder(bufferSize);
             GetPrivateProfileString(section, key, value, temp, bufferSize, _fileName);
@@ -90,19 +98,17 @@ namespace Common
         /// <param name="section"> имя секции в файле конфигурации </param>
         /// <param name="key"> имя параметра в файле конфигурации </param>
         /// <param name="value"> значение по умолчанию </param>
-        /// <returns>
-        /// Success: значение считанного параметра
-        /// Failure: значение по умолчанию (value)
-        /// </returns>
-        public int ReadInt(string section, string key, int value)
+        /// <returns> значение считанного параметра или значение по умолчанию </returns>
+        public int ReadInt(string section, string key, int value = 0)
         {
-            if (_fileName == "") return value;
+            if (string.IsNullOrEmpty(_fileName))
+                return value;
             const int bufferSize = 255;
             StringBuilder temp = new StringBuilder(bufferSize);
             GetPrivateProfileString(section, key, "", temp, bufferSize, _fileName);
             if (!int.TryParse(temp.ToString(), out int result)) result = value;
             return result;
-        } // ReadInt(string, string, int)
+        } // ReadInt(string, string, [int])
 
         /// <summary>
         /// Чтение числа с плавающей запятой из файла конфигурации
@@ -110,19 +116,17 @@ namespace Common
         /// <param name="section"> имя секции в файле конфигурации </param>
         /// <param name="key"> имя параметра в файле конфигурации </param>
         /// <param name="value"> значение по умолчанию </param>
-        /// <returns>
-        /// Success: значение считанного параметра
-        /// Failure: значение по умолчанию (value)
-        /// </returns>
-        public float ReadFloat(string section, string key, float value)
+        /// <returns> значение считанного параметра или значение по умолчанию </returns>
+        public float ReadFloat(string section, string key, float value = 0.0f)
         {
-            if (_fileName == "") return value;
+            if (string.IsNullOrEmpty(_fileName))
+                return value;
             const int bufferSize = 255;
             StringBuilder temp = new StringBuilder(bufferSize);
             GetPrivateProfileString(section, key, "", temp, bufferSize, _fileName);
             if (!float.TryParse(temp.ToString(), out float result)) result = value;
             return result;
-        } // ReadFloat(string, string, int)
+        } // ReadFloat(string, string, [float])
 
         /// <summary>
         /// Чтение логического (boolean) значения из файла конфигурации
@@ -130,14 +134,11 @@ namespace Common
         /// <param name="section"> имя секции в файле конфигурации </param>
         /// <param name="key"> имя параметра в файле конфигурации </param>
         /// <param name="value"> значение по умолчанию </param>
-        /// <returns>
-        /// Success: значение считанного параметра
-        /// Failure: значение по умолчанию (value)
-        /// </returns>
-        public bool ReadBool(string section, string key, bool value)
+        /// <returns> значение считанного параметра или значение по умолчанию </returns>
+        public bool ReadBool(string section, string key, bool value = false)
         {
             return ReadString(section, key, value.ToString()) == true.ToString();
-        } // ReadBool(string, string, bool)
+        } // ReadBool(string, string, [bool])
 
         /// <summary>
         /// Чтение зашифрованной строки из файла конфигурации
@@ -145,11 +146,8 @@ namespace Common
         /// <param name="section"> имя секции в файле конфигурации </param>
         /// <param name="key"> имя параметра в файле конфигурации </param>
         /// <param name="value"> значение по умолчанию </param>
-        /// <returns>
-        /// Success: значение считанного параметра
-        /// Failure: значение по умолчанию (value)
-        /// </returns>
-        public string ReadPassword(string section, string key, string value)
+        /// <returns> значение считанного параметра или значение по умолчанию </returns>
+        public string ReadPassword(string section, string key, string value = "")
         {
             try
             {
@@ -165,7 +163,7 @@ namespace Common
             {
                 return value;
             }
-        } // ReadString(string, string, string)
+        } // ReadString(string, string, [string])
 
         /// <summary>
         /// Запись строки в файл конфигурации
@@ -175,7 +173,8 @@ namespace Common
         /// <param name="value"> значение параметра </param>
         public void WriteString(string section, string key, string value)
         {
-            if (_fileName == "") return;
+            if (string.IsNullOrEmpty(_fileName))
+                return;
             WritePrivateProfileString(section, key, value, _fileName);
         } // WriteString(string, string, string)
 
@@ -187,7 +186,8 @@ namespace Common
         /// <param name="value"> значение параметра </param>
         public void WriteBool(string section, string key, bool value)
         {
-            if (_fileName == "") return;
+            if (string.IsNullOrEmpty(_fileName))
+                return;
             WritePrivateProfileString(section, key, value.ToString(), _fileName);
         } // WriteBool(string, string, bool)
 
@@ -199,21 +199,19 @@ namespace Common
         /// <param name="value"> значение параметра </param>
         public void WritePassword(string section, string key, string value)
         {
-            if (_fileName == "") return;
+            if (string.IsNullOrEmpty(_fileName))
+                return;
             string strEncrypt = value;
-            if (value != "")
+            if (!string.IsNullOrEmpty(value))
                 try
                 {
                     byte[] bytes = Encoding.UTF8.GetBytes(value);
                     AesCryptoServiceProvider aes = new AesCryptoServiceProvider()
                     {
-                        Key = new SHA256CryptoServiceProvider().ComputeHash(
-                            Encoding.UTF8.GetBytes(_encryptionKey)),
-                        IV = new MD5CryptoServiceProvider().ComputeHash(
-                            Encoding.UTF8.GetBytes(_encryptionIV))
+                        Key = new SHA256CryptoServiceProvider().ComputeHash(Encoding.UTF8.GetBytes(_encryptionKey)),
+                        IV = new MD5CryptoServiceProvider().ComputeHash(Encoding.UTF8.GetBytes(_encryptionIV))
                     };
-                    strEncrypt = Convert.ToBase64String(
-                        aes.CreateEncryptor().TransformFinalBlock(bytes, 0, bytes.Length));
+                    strEncrypt = Convert.ToBase64String(aes.CreateEncryptor().TransformFinalBlock(bytes, 0, bytes.Length));
                 }
                 catch
                 {
@@ -227,8 +225,7 @@ namespace Common
             StringBuilder retVal, int size, string filePath);
 
         [System.Runtime.InteropServices.DllImport("kernel32")]
-        private static extern int WritePrivateProfileString(string section, string key, string str,
-            string filePath);
+        private static extern int WritePrivateProfileString(string section, string key, string str, string filePath);
 
     } // class IniFile
 } // namespace Common

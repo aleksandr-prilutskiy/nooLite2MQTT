@@ -23,4 +23,4 @@ namespace ServiceApp
             Service.OnStop();
         } // OnStop()
     } // class ServiceMain
-}
+} // namespace ServiceApp

@@ -3,38 +3,81 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 
-
 namespace nooLite2MQTT
 {
     /// <summary>
     /// Сервис сопряжения устройств nooLite c протоколом MQTT
-    /// Версия от 04.04.2022
+    /// Версия от 06.01.2023
     /// </summary>
     public partial class Server
     {
-        private const string _iniFileName = "nooLite2MQTT.ini"; // Имя файла настроек сервиса
-        private const string _logFileName = "nooLite2MQTT.log"; // Имя файла журнала
-        public static string _version = "0.2.0.2";              // Версия программы
-        private static string TopicPrefix = "nooLite/";         // Префикс MQTT топиков устройств nooLite
-        public static IniFile IniFile;                          // Объект для работы с файлом конфигурации программы
-        public static LogFile LogFile;                          // Объект для работы с файлом журнала
+        /// <summary>
+        /// Имя файла настроек сервиса
+        /// </summary>
+        private const string _fileIniName = "nooLite2MQTT.ini";
+
+        /// <summary>
+        /// Имя файла журнала сервиса
+        /// </summary>
+        private const string _fileLogName = "nooLite2MQTT.log";
+
+        /// <summary>
+        /// Версия программы
+        /// </summary>
+        public static string Version = "0.2.2.1";
+
+        /// <summary>
+        /// Префикс MQTT топиков устройств nooLite
+        /// </summary>
+        public static string TopicPrefix = "nooLite/";
+
+        /// <summary>
+        /// Объект для работы с файлом журнала
+        /// </summary>
+        public static LogFile LogFile;
+
+        /// <summary>
+        /// Объект для работы с файлом журнала
+        /// </summary>
         public static Channels Channels;
-        public static nooLite nooLite;                          // Объект для работы с адаптером nooLite MTRF-64-USB
-        public static MQTT MQTT;                                // Объект для работы с брокером MQTT
-        public static List<string> Topics;                      // Список обрататываемых топиков
-        private static bool _debug = false;                     // Режим отладки (подробные записи в журнал)
-        public static bool Run = false;                         // Признак что сервис запущен
-        public CancellationTokenSource cancelToken;             // Токен для завершения потока
+
+        /// <summary>
+        /// Объект для работы с адаптером nooLite MTRF-64-USB
+        /// </summary>
+        public static nooLite nooLite;
+
+        /// <summary>
+        /// Объект для работы с брокером MQTT
+        /// </summary>
+        public static MQTT MQTT;
+
+        /// <summary>
+        /// Список обрататываемых топиков
+        /// </summary>
+        public static List<string> Topics;
+
+        /// <summary>
+        /// Режим отладки (подробные записи в журнал)
+        /// </summary>
+        public static bool Debug = false;
+
+        /// <summary>
+        /// Признак что сервис запущен
+        /// </summary>
+        public static bool Run = false;
+
+        /// <summary>
+        /// Токен для завершения потока
+        /// </summary>
+        public CancellationTokenSource CancelToken;
 
         /// <summary>
         ///	Инициализация объекта
         /// </summary>
         public Server()
         {
-            IniFile = new IniFile(_iniFileName);
-            LogFile = new LogFile(_logFileName);
-            LogFile?.Add("nooLite2MQTT - Сервис сопряжения устройств nooLite c MQTT. " +
-                "Версия: " + _version);
+            LogFile = new LogFile(_fileLogName);
+            LogFile?.Add("nooLite2MQTT - Сервис сопряжения устройств nooLite c MQTT. Версия: " + Version);
             MQTT = new MQTT(LogFile)
             {
                 OnConnect = OnMQTTConnect,
@@ -55,22 +98,24 @@ namespace nooLite2MQTT
         /// </summary>
         public void OnStart()
         {
-            if (Run) return;
+            if (Run)
+                return;
             Run = true;
             LogFile?.Add("@Запуск сервиса");
+            IniFile IniFile = new IniFile(_fileIniName);
             TopicPrefix = IniFile.ReadString("MQTT", "Prefix", TopicPrefix);
-            nooLite.NativePort = IniFile.ReadString("nooLite", "Port", "");
-            _debug = IniFile.ReadString("Service", "Mode", "") == "Debug";
+            nooLite.NativePort = IniFile.ReadString("nooLite", "Port");
+            Debug = IniFile.ReadString("Service", "Mode", "") == "Debug";
             Topics = new List<string>();
             Channels.Load(IniFile);
-            cancelToken = new CancellationTokenSource();
-            new Thread(() => MainThread(cancelToken.Token)).Start();
+            CancelToken = new CancellationTokenSource();
+            new Thread(() => MainThread(CancelToken.Token)).Start();
             MQTT.Topics.Clear();
             MQTT.Topics.Add(TopicPrefix + "#");
             MQTT.ReadConfig(IniFile);
-            MQTT.Start(cancelToken.Token);
-            nooLite.Start(cancelToken.Token);
-            Channels.Start(cancelToken.Token);
+            MQTT.Start(CancelToken.Token);
+            nooLite.Start(CancelToken.Token);
+            Channels.Start(CancelToken.Token);
             LogFile?.Save();
         } // OnStart()
 
@@ -79,14 +124,15 @@ namespace nooLite2MQTT
         /// </summary>
         public void OnStop()
         {
-            if (!Run) return;
-            cancelToken.Cancel();
+            if (!Run)
+                return;
+            CancelToken.Cancel();
             MQTT.Disconnect();
             nooLite.Disconnect();
             Topics.Clear();
             LogFile?.Add("@Сервис остановлен");
             LogFile?.Save();
-            cancelToken.Dispose();
+            CancelToken.Dispose();
             Run = false;
         } // OnStop()
 
@@ -114,22 +160,22 @@ namespace nooLite2MQTT
         /// <summary>
         /// Обработка исходящих сообщений брокеру MQTT
         /// </summary>
-        /// <param name="topic"></param>
-        /// <param name="message"></param>
+        /// <param name="topic"> имя топика </param>
+        /// <param name="message"> передавемые данные </param>
         private static void OnMQTTMessageSend(string topic, string message)
         {
-            if (!_debug) return;
-            LogFile?.Add("@MQTT SEND= topic: " + topic + "; message = '" + message + "'");
+            if (Debug)
+                LogFile?.Add("@MQTT SEND= topic: " + topic + "; message = '" + message + "'");
         } // OnMQTTMessageSend(string, string)
 
         /// <summary>
         /// Обработка входящих сообщений от брокера MQTT
         /// </summary>
-        /// <param name="topic"></param>
-        /// <param name="message"></param>
+        /// <param name="topic"> имя топика </param>
+        /// <param name="message"> передавемые данные </param>
         private static void OnMQTTMessageResive(string topic, string message)
         {
-            if (_debug)
+            if (Debug)
                 LogFile?.Add("@MQTT READ= topic: " + topic + "; message = '" + message + "'");
             CheckEventsMQTT();
         } // OnMQTTMessageResive(string, string)
@@ -139,6 +185,7 @@ namespace nooLite2MQTT
         /// </summary>
         private static void OnMQTTConnect()
         {
+            LogFile?.Add("@MQTT Connected: " + MQTT.BrokerAddress + ":" + MQTT.BrokerPort.ToString());
             Topics.Clear();
         } // OnMQTTConnect()
 
@@ -159,12 +206,15 @@ namespace nooLite2MQTT
             {
                 byte id;
                 MQTT.Message message = MQTT.GetMessage();
-                if (message is null) break;
+                if (message is null)
+                    break;
                 //if (CheckMQTTServiceTopic(message)) continue;
-                if (message.Topic.Substring(0, TopicPrefix.Length) != TopicPrefix) continue;
+                if (message.Topic.Substring(0, TopicPrefix.Length) != TopicPrefix)
+                    continue;
                 bool skip = true;
                 foreach (string str in Topics)
-                    if (message.Topic == str) skip = false;
+                    if (message.Topic == str)
+                        skip = false;
                 if (skip)
                 {
                     Topics.Add(message.Topic);
@@ -173,7 +223,8 @@ namespace nooLite2MQTT
                 }
                 LogFile.Add(" Обработка: " + message.Topic + "=>" + message.Data);
                 string topic = message.Topic.Substring(TopicPrefix.Length);
-                if (topic.Substring(0, 2).ToLower() != "ch") continue;
+                if (topic.Substring(0, 2).ToLower() != "ch")
+                    continue;
                 string subtopic = "";
                 int pos = topic.IndexOf("/");
                 if (pos >= 0)
@@ -181,7 +232,8 @@ namespace nooLite2MQTT
                     subtopic = topic.Substring(pos);
                     topic = topic.Substring(0, pos);
                 }
-                if (!byte.TryParse(topic.Substring(2), out id)) continue;
+                if (!byte.TryParse(topic.Substring(2), out id))
+                    continue;
                 if (message.Data.ToUpper() == "BIND")
                 {
                     Channels.Bind(id);
@@ -189,16 +241,17 @@ namespace nooLite2MQTT
                 }
                 Channel channel = Channels.Search(id);
                 if (channel != null)
-                {
                     switch (subtopic.ToUpper())
                     {
                         case "/BRIG":
-                            if (!uint.TryParse(message.Data, out uint brightness)) brightness = 100;
+                            if (!uint.TryParse(message.Data, out uint brightness))
+                                brightness = 100;
                             brightness = 0xFF * (brightness > 100 ? 100 : brightness) / 100 << 24;
                             channel.SendCommand(nooLite.Command.SetBrightness, brightness);
                             break;
                         case "/TEMP":
-                            if (!uint.TryParse(message.Data, out uint param)) param = 5;
+                            if (!uint.TryParse(message.Data, out uint param))
+                                param = 5;
                             param = (uint)Math.Floor((decimal)param / 5);
                             if ((param > 0) && (param < 256))
                             {
@@ -229,7 +282,6 @@ namespace nooLite2MQTT
                             }
                             break;
                     }
-                }
             }
         } // CheckEventsMQTT()
 
@@ -240,15 +292,21 @@ namespace nooLite2MQTT
         /// <param name="buffer"> пакет данных nooLite </param>
         private static void nooLiteCommandInfo(byte[] buffer)
         {
-            if (!_debug || (buffer is null)) return;
-            string str = "";
-            if (buffer[(byte)nooLite.Data.St] == 0xAB) str += "SEND = ";
-            else if (buffer[(byte)nooLite.Data.St] == 0xAD) str += "READ = ";
-            else return;
-            for (int i = 0; i < buffer.Length; i++) str += buffer[i].ToString("X2") + " ";
+            if (!Debug || (buffer is null))
+                return;
+            string str = string.Empty;
+            if (buffer[(byte)nooLite.Data.St] == 0xAB)
+                str += "SEND = ";
+            else if (buffer[(byte)nooLite.Data.St] == 0xAD)
+                str += "READ = ";
+            else
+                return;
+            for (int i = 0; i < buffer.Length; i++)
+                str += buffer[i].ToString("X2") + " ";
             str += "| ch=" + buffer[(byte)nooLite.Data.Ch].ToString("00") + " " +
                 (buffer[(byte)nooLite.Data.St] == 0xAB ? "<-" : "->");
-            if (buffer[(byte)nooLite.Data.Ctr] == 0x05) str += " mode=Unbind";
+            if (buffer[(byte)nooLite.Data.Ctr] == 0x05)
+                str += " mode=Unbind";
             else
                 switch (buffer[(byte)nooLite.Data.Cmd])
                 {
@@ -319,6 +377,5 @@ namespace nooLite2MQTT
                 }
             LogFile?.Add("@" + str);
         } // Debug_CommandInfo([] buffer)
-
     } // class Server
-}
+} // namespace nooLite2MQTT

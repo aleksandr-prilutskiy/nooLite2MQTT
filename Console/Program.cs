@@ -8,12 +8,27 @@ namespace ConsoleApp
     /// <summary>
     /// Сервис сопряжения устройств nooLite c протоколом MQTT
     /// Программа для отладки сервиса в режиме консольного приложения
-    /// Версия от 23.02.2022
     /// </summary>
+    /// Версия от 06.01.2023
     class App
     {
+
+        /// <summary>
+        /// Перехват необработанных исключений
+        /// </summary>
+        public static void UnhandledException(object sender, UnhandledExceptionEventArgs args)
+        {
+            Exception exception = args.ExceptionObject as Exception;
+            Console.WriteLine("Исключение: " + exception.Message);
+        } // UnhandledException(object, UnhandledExceptionEventArgs)
+
         static void Main()
         {
+            //Application.EnableVisualStyles();
+            //Application.SetCompatibleTextRenderingDefault(false);
+            //Application.ThreadException += new ThreadExceptionEventHandler(Application_ThreadException);
+            AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(UnhandledException);
+
             Console.WriteLine("Отладка сервиса");
             Console.Write("Запуск....");
             Server service = new Server();
@@ -23,12 +38,17 @@ namespace ConsoleApp
             Console.WriteLine("R - Запуск сервиса");
             Console.WriteLine("L - Просморт журнала");
             Console.WriteLine("T - Просморт таблицы утройств");
+            Console.WriteLine("D - Отладка");
             Console.WriteLine("Q - Выход");
             while (true)
             {
                 ConsoleKeyInfo key = Console.ReadKey();
                 Console.WriteLine();
-                if ((key.KeyChar == 'Q') || (key.KeyChar == 'q')) break;
+                if ((key.KeyChar == 'Q') || (key.KeyChar == 'q'))
+                {
+                    service.OnStop();
+                    break;
+                }
                 if ((key.KeyChar == 'R') || (key.KeyChar == 'r'))
                 {
                     service.OnStart();
@@ -52,10 +72,10 @@ namespace ConsoleApp
                         }
                     }
                     catch { }
-                if ((key.KeyChar == 'T') || (key.KeyChar == 't')) 
+                if ((key.KeyChar == 'T') || (key.KeyChar == 't'))
                 {
                     Console.WriteLine("Channels:");
-                    for (byte i = 0; i < nooLite._сhannelCount; i++)
+                    for (byte i = 0; i < nooLite.ChannelCount; i++)
                     {
                         Channel channel = Server.Channels.Search(i);
                         if (channel is null) continue;
@@ -76,8 +96,15 @@ namespace ConsoleApp
                     foreach (string topic in Server.Topics)
                         Console.WriteLine(" " + topic);
                 }
+                if ((key.KeyChar == 'D') || (key.KeyChar == 'd'))
+                {
+                    Console.WriteLine("Debug...");
+                    throw new Exception("2");
+                    int i = 0;
+                    var x = 4 / i;
+                }
             }
             service.OnStop();
         } // Main()
     } // class App
-}
+} // namespace ConsoleApp

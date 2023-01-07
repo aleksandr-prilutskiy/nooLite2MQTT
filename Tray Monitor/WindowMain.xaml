@@ -1,0 +1,112 @@
+﻿<Window x:Class="TrayMonitor.WindowMain"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:tb="http://www.hardcodet.net/taskbar"
+        Loaded="MainWindow_Loaded"
+        Closing="MainWindow_Closing"
+        ShowInTaskbar="False"
+        Height="1"
+        Width="1">
+    <Window.Resources>
+        <BitmapImage x:Key="iconControl"
+                     UriSource="pack://application:,,,/Resources/icon_Control.png" />
+        <BitmapImage x:Key="iconStart"
+                     UriSource="pack://application:,,,/Resources/icon_Run.png" />
+        <BitmapImage x:Key="iconStop"
+                     UriSource="pack://application:,,,/Resources/icon_Stop.png" />
+        <BitmapImage x:Key="iconInstall"
+                     UriSource="pack://application:,,,/Resources/icon_Install.png" />
+        <BitmapImage x:Key="iconUninstall"
+                     UriSource="pack://application:,,,/Resources/icon_Uninstall.png" />
+        <BitmapImage x:Key="iconLog"
+                     UriSource="pack://application:,,,/Resources/icon_Log.png" />
+        <BitmapImage x:Key="iconSetup"
+                     UriSource="pack://application:,,,/Resources/icon_Setup.png" />
+        <BitmapImage x:Key="iconExit"
+                     UriSource="pack://application:,,,/Resources/icon_Exit.png" />
+    </Window.Resources>
+
+    <Grid>
+        <tb:TaskbarIcon
+            Name="NotifyIcon"
+            MenuActivation="LeftOrRightClick"
+            Visibility="Visible">
+            <tb:TaskbarIcon.TrayToolTip>
+                <Border
+                    Width="300"
+                    Height="40"
+                    Background="White"
+                    BorderBrush="Black"
+                    BorderThickness="2"
+                    CornerRadius="5"
+                    Opacity=".9">
+                    <TextBlock
+                        Name="NotifyIconToolTip"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        FontWeight="Normal"
+                        Foreground="Black" />
+                </Border>
+            </tb:TaskbarIcon.TrayToolTip>
+            <tb:TaskbarIcon.ContextMenu>
+                <ContextMenu Name="TrayMenu">
+                    <MenuItem Header="Управление"
+                              Click="TrayMenu_Control">
+                        <MenuItem.Icon>
+                            <Image Source="{StaticResource iconControl}" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem x:Name="TrayItem_ServiceStart"
+                              Header="Запустить сервис"
+                              Visibility="Collapsed"
+                              Click="TrayMenu_ServiceStart">
+                        <MenuItem.Icon>
+                            <Image Source="{StaticResource iconStart}" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem x:Name="TrayItem_ServiceStop"
+                              Header="Остановить сервис"
+                              Visibility="Collapsed"
+                              Click="TrayMenu_ServiceStop">
+                        <MenuItem.Icon>
+                            <Image Source="{StaticResource iconStop}" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem x:Name="TrayItem_ServiceInstall"
+                              Header="Установить сервис"
+                              Click="TrayMenu_ServiceInstall">
+                        <MenuItem.Icon>
+                            <Image Source="{StaticResource iconInstall}" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem x:Name="TrayItem_ServiceUninstall"
+                              Header="Удалить сервис"
+                              Visibility="Collapsed"
+                              Click="TrayMenu_ServiceUninstall">
+                        <MenuItem.Icon>
+                            <Image Source="{StaticResource iconUninstall}" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Header="Просмотр журнала"
+                              Click="TrayMenu_LogView">
+                        <MenuItem.Icon>
+                            <Image Source="{StaticResource iconLog}" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Header="Настройки программы"
+                              Click="TrayMenu_Setup">
+                        <MenuItem.Icon>
+                            <Image Source="{StaticResource iconSetup}" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Header="Выход"
+                              Click="TrayMenu_Exit">
+                        <MenuItem.Icon>
+                            <Image Source="{StaticResource iconExit}" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                </ContextMenu>
+            </tb:TaskbarIcon.ContextMenu>
+        </tb:TaskbarIcon>
+    </Grid>
+</Window>

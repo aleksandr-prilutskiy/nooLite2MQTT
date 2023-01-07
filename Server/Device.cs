@@ -3,12 +3,32 @@
     /// <summary>
     /// Объект - исполнительное устройство nooLite
     /// </summary>
+    /// Версия от 06.01.2023
     public class Device
     {
-        public byte Type { get; set; }         // Модель устройства
-        public byte Version { get; set; }      // Версия прошивки устройства
-        public string Addr { get; set; }       // Уникальный (аппаратный) адрес устройства (4 байта)
-        public bool State { get; set; }        // Состояние: true: вкл; false: выкл
-        public byte Bright { get; set; }       // Яркость (0-100%)
+        /// <summary>
+        /// Модель устройства
+        /// </summary>
+        public byte Type { get; set; }
+
+        /// <summary>
+        /// Версия прошивки устройства
+        /// </summary>
+        public byte Version { get; set; }
+
+        /// <summary>
+        /// Уникальный (аппаратный) адрес устройства (4 байта)
+        /// </summary>
+        public string Addr { get; set; }
+
+        /// <summary>
+        /// Состояние: true: вкл; false: выкл
+        /// </summary>
+        public bool State { get; set; }
+
+        /// <summary>
+        /// Яркость (0-100%)
+        /// </summary>
+        public byte Bright { get; set; }
     } // class Device
-}
+} // namespace nooLite2MQTT
